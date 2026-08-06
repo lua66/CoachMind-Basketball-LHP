@@ -297,6 +297,24 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
   return (
     <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-indigo-950 text-white p-6 rounded-2xl border border-emerald-500/30 shadow-xl space-y-5">
       {/* Card Header */}
+      {/* Hero Banner for Google Integration */}
+      <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden border border-emerald-500/30 shadow-lg mb-2">
+        <img
+          src="/src/assets/images/google_sync_banner_1786047101005.jpg"
+          alt="Sincronización con Google Sheets"
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent flex items-end p-4">
+          <div className="flex items-center gap-2 text-white">
+            <Sparkles className="w-5 h-5 text-emerald-400" />
+            <span className="font-extrabold text-sm sm:text-base tracking-wide">
+              Integración Oficial con Google Drive & Sheets
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between flex-wrap gap-3 border-b border-emerald-500/20 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-950/40">

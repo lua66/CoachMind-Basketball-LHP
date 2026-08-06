@@ -131,29 +131,104 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState(false);
+  const [serverRecords, setServerRecords] = useState<any[]>([]);
 
-  // Filter current database
-  const subscribedList = initialCoachesDatabase.filter((c) => c.isSubscribed);
-  const nonSubscribedList = initialCoachesDatabase.filter((c) => !c.isSubscribed);
+  // Fetch server records on mount
+  React.useEffect(() => {
+    fetch('/api/sheets/records')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.records)) {
+          setServerRecords(data.records);
+        }
+      })
+      .catch((err) => console.warn('Could not fetch server sheet records:', err));
+  }, []);
 
-  // If user profile exists, append or merge it to subscribed list
-  if (userProfile && !subscribedList.some((c) => c.email === userProfile.email)) {
-    subscribedList.unshift({
-      id: 'current-user',
+  // Filter base list
+  const subscribedList: CoachRecord[] = [...initialCoachesDatabase.filter((c) => c.isSubscribed)];
+  const nonSubscribedList: CoachRecord[] = [...initialCoachesDatabase.filter((c) => !c.isSubscribed)];
+
+  // Merge server and local storage records
+  const localRecordsRaw = localStorage.getItem('coachmind_google_sheet_records');
+  const localRecords: any[] = localRecordsRaw ? JSON.parse(localRecordsRaw) : [];
+  const allSyncedRecords = [...serverRecords, ...localRecords];
+
+  allSyncedRecords.forEach((rec, idx) => {
+    if (!rec || !rec.email) return;
+    const isPaid = rec.plan?.includes('Mensual') || rec.plan?.includes('Anual') || rec.estado?.includes('Suscripción Activa') || rec.estado?.includes('Pro');
+    const coachItem: CoachRecord = {
+      id: `synced-${idx}-${Date.now()}`,
+      firstName: rec.nombreCompleto?.split(' ')[0] || rec.firstName || 'Entrenador',
+      lastName: rec.nombreCompleto?.split(' ').slice(1).join(' ') || rec.lastName || 'Registrado',
+      email: rec.email,
+      phone: rec.telefono || rec.phone || 'N/A',
+      club: rec.club || 'Sin Club',
+      teamLevel: rec.nivelEquipo || rec.teamLevel || 'Autonómico',
+      teamCategory: rec.categoriaEquipo || rec.teamCategory || 'Senior',
+      isSubscribed: isPaid,
+      subscriptionPlan: rec.plan || (isPaid ? 'Mensual (5€/mes)' : 'Invitado'),
+      paymentMethod: rec.metodoPago || (isPaid ? 'Tarjeta' : 'Sin Pago'),
+      creditsRemaining: isPaid ? 500 : 100,
+      registeredAt: rec.fechaRegistro || rec.registeredAt || new Date().toISOString().split('T')[0],
+      status: rec.estado || (isPaid ? 'Activa (Pro)' : 'Prueba Gratuita'),
+    };
+
+    if (isPaid) {
+      if (!subscribedList.some((c) => c.email.toLowerCase() === rec.email.toLowerCase())) {
+        subscribedList.unshift(coachItem);
+      }
+    } else {
+      if (!nonSubscribedList.some((c) => c.email.toLowerCase() === rec.email.toLowerCase())) {
+        nonSubscribedList.unshift(coachItem);
+      }
+    }
+  });
+
+  // If active userProfile exists, append or merge it
+  if (userProfile && userProfile.email) {
+    const isPaidUser = userProfile.subscriptionStatus === 'active' || !!userProfile.subscriptionPlan;
+    const userCoachRecord: CoachRecord = {
+      id: 'current-user-profile',
       firstName: userProfile.firstName || 'Entrenador',
       lastName: userProfile.lastName || 'Registrado',
-      email: userProfile.email || 'entrenador@coachmind.app',
+      email: userProfile.email,
       phone: userProfile.phone || 'N/A',
       club: userProfile.club || 'Sin Club',
       teamLevel: userProfile.teamLevel || 'Autonómico',
       teamCategory: userProfile.teamCategory || 'Senior',
-      isSubscribed: true,
-      subscriptionPlan: userProfile.subscriptionPlan === 'annual' ? 'Anual (119,99€/año)' : 'Mensual (14,99€/mes)',
-      paymentMethod: userProfile.paymentMethod === 'paypal' ? 'PayPal' : `Tarjeta (•••• ${userProfile.cardLast4 || '4242'})`,
-      creditsRemaining: userProfile.creditsRemaining ?? 250,
-      registeredAt: userProfile.registeredAt || new Date().toISOString().split('T')[0],
-      status: 'Activa (Pro)',
-    });
+      isSubscribed: isPaidUser,
+      subscriptionPlan: userProfile.subscriptionPlan === 'annual'
+        ? 'Anual (60€/año)'
+        : userProfile.subscriptionPlan === 'monthly'
+        ? 'Mensual (5€/mes)'
+        : 'Prueba Gratuita (Invitado)',
+      paymentMethod: userProfile.paymentMethod === 'paypal'
+        ? 'PayPal'
+        : userProfile.cardLast4
+        ? `Tarjeta (•••• ${userProfile.cardLast4})`
+        : 'Tarjeta Visa/Mastercard',
+      creditsRemaining: userProfile.creditsRemaining ?? (isPaidUser ? 500 : 100),
+      registeredAt: userProfile.registeredAt || new Date().toLocaleDateString('es-ES'),
+      status: isPaidUser ? 'Activa (Pro)' : 'Prueba Gratuita (Invitado)',
+    };
+
+    if (isPaidUser) {
+      // Replace existing entry with same email or unshift
+      const existingIdx = subscribedList.findIndex((c) => c.email.toLowerCase() === userProfile.email.toLowerCase());
+      if (existingIdx >= 0) {
+        subscribedList[existingIdx] = userCoachRecord;
+      } else {
+        subscribedList.unshift(userCoachRecord);
+      }
+    } else {
+      const existingIdx = nonSubscribedList.findIndex((c) => c.email.toLowerCase() === userProfile.email.toLowerCase());
+      if (existingIdx >= 0) {
+        nonSubscribedList[existingIdx] = userCoachRecord;
+      } else {
+        nonSubscribedList.unshift(userCoachRecord);
+      }
+    }
   }
 
   const handleSyncGoogleSheets = async () => {

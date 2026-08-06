@@ -908,6 +908,14 @@ app.post('/api/paypal/capture-order', async (req, res) => {
   }
 });
 
+// In-memory store for automatic coach registrations/subscriptions synced to Google Sheets
+const syncedCoachesRecords: any[] = [];
+
+// Get all auto-synced coach records
+app.get('/api/sheets/records', (_req, res) => {
+  return res.json({ success: true, records: syncedCoachesRecords });
+});
+
 // 5. Google Sheets Integration API Endpoint
 app.post('/api/sheets/sync-coaches', async (req, res) => {
   try {
@@ -952,7 +960,7 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
           c.teamCategory || '',
           c.subscriptionPlan || 'Mensual',
           c.paymentMethod || 'Tarjeta',
-          c.creditsRemaining !== undefined ? c.creditsRemaining : 250,
+          c.creditsRemaining !== undefined ? c.creditsRemaining : 500,
           c.registeredAt || '',
           c.status || 'Activa',
         ]);
@@ -1027,6 +1035,16 @@ app.post('/api/sync-google-sheet', async (req, res) => {
   try {
     const coachData = req.body;
     console.log('[Google Sheets Auto-Sync] Nuevo registro de entrenador recibido:', coachData?.email || 'Desconocido');
+
+    if (coachData && coachData.email) {
+      // Remove previous entries with same email if present, then add updated record
+      const existingIdx = syncedCoachesRecords.findIndex(r => r.email === coachData.email);
+      if (existingIdx >= 0) {
+        syncedCoachesRecords[existingIdx] = coachData;
+      } else {
+        syncedCoachesRecords.unshift(coachData);
+      }
+    }
 
     const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxYbc2PV4Y97s_mPeTfPoGSFZe2sBZCR4asxwTj7ZXKkezzPL4bg-F55bApMqTh1ebI/exec';
 

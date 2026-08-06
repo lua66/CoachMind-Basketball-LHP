@@ -581,6 +581,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </p>
       </div>
 
+      {/* Google Sheets Sync & Database Section */}
+      <GoogleSheetsSyncCard userProfile={userProfile} />
+
       {/* Cancellation Modal */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">

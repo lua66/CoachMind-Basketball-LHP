@@ -22,9 +22,12 @@ import {
   Download,
   AlertTriangle,
   Calendar,
+  Smartphone,
+  Ticket,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { getSubscriptionPeriodInfo, downloadLibraryBackup } from '../utils/subscriptionUtils';
+import { validateAndConsumeCode, getCurrentCodeStatus } from '../utils/activationCodes';
 import { ReviewModal } from './ReviewModal';
 import { GoogleSheetsSyncCard } from './GoogleSheetsSyncCard';
 
@@ -70,8 +73,106 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [cancelFeedback, setCancelFeedback] = useState<string>('');
   const [hasDownloadedBackup, setHasDownloadedBackup] = useState(false);
 
-  // WhatsApp contact number (placeholder or customizable)
-  const WHATSAPP_NUMBER = '34600000000';
+  // Activation Code / Bizum States
+  const [activationCodeInput, setActivationCodeInput] = useState('');
+  const [activationMessage, setActivationMessage] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleActivateWithCode = () => {
+    setActivationMessage(null);
+    const code = activationCodeInput.trim().toUpperCase();
+    if (!code) {
+      setActivationMessage({ text: 'Por favor introduce un código de activación o cupón.', isError: true });
+      return;
+    }
+
+    const valResult = validateAndConsumeCode(code);
+    if (!valResult.success) {
+      setActivationMessage({ text: valResult.message, isError: true });
+      return;
+    }
+
+    // Call server to consume code as well
+    fetch('/api/activation-codes/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }).catch(() => {});
+
+    const isAnnual = valResult.plan === 'annual';
+    const newPlan = isAnnual ? 'annual' : 'monthly';
+    const newCredits = valResult.credits || (isAnnual ? 1000 : 500);
+
+    const updatedProfile: UserProfile = {
+      ...(userProfile || {
+        firstName: firstName || 'Entrenador',
+        lastName: lastName || '',
+        email: email || 'entrenador@coachmind.app',
+        phone: phone || '',
+        country: country || 'España',
+        town: town || '',
+        club: club || '',
+        season: season || '2025/2026',
+        teamGender: teamGender || 'Masculino',
+        coachRole: coachRole || 'Entrenador Principal',
+        coachLevel: coachLevel || 'Nivel 2 / Autonómico',
+        teamLevel: teamLevel || 'Autonómico',
+        teamCategory: teamCategory || 'Senior',
+        registeredAt: new Date().toLocaleDateString('es-ES'),
+      }),
+      subscriptionPlan: newPlan,
+      subscriptionStatus: 'active',
+      paymentMethod: 'bizum',
+      creditsRemaining: newCredits,
+      totalCredits: newCredits,
+    };
+
+    if (onUpdateProfile) {
+      onUpdateProfile(updatedProfile);
+    }
+
+    // Sync to Google Sheets
+    const sheetRecord = {
+      fechaRegistro: updatedProfile.registeredAt,
+      nombreCompleto: `${updatedProfile.firstName} ${updatedProfile.lastName}`,
+      email: updatedProfile.email,
+      telefono: updatedProfile.phone,
+      pais: updatedProfile.country,
+      ciudad: updatedProfile.town,
+      club: updatedProfile.club,
+      cargoRol: updatedProfile.coachRole,
+      titulacion: updatedProfile.coachLevel,
+      generoEquipo: updatedProfile.teamGender,
+      nivelEquipo: updatedProfile.teamLevel,
+      categoriaEquipo: updatedProfile.teamCategory,
+      plan: newPlan === 'annual' ? 'Anual (60€/año)' : 'Mensual (5€/mes)',
+      metodoPago: `Bizum / Código (${code})`,
+      codigoActivacion: code,
+      estado: 'Activa (Pro)',
+    };
+
+    try {
+      const existingSheets = JSON.parse(localStorage.getItem('coachmind_google_sheet_records') || '[]');
+      existingSheets.unshift(sheetRecord);
+      localStorage.setItem('coachmind_google_sheet_records', JSON.stringify(existingSheets));
+
+      fetch('/api/sync-google-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sheetRecord),
+      }).catch(() => {});
+    } catch (e) {}
+
+    setActivationMessage({
+      text: valResult.message,
+      isError: false,
+    });
+    setActivationCodeInput('');
+  };
+
+  // WhatsApp contact number & Bizum info from environment variables
+  const BIZUM_PHONE = import.meta.env.VITE_BIZUM_PHONE || '+34 608180231';
+  const WHATSAPP_NUMBER = BIZUM_PHONE.replace(/[^0-9]/g, '');
+  const PAYPAL_EMAIL = import.meta.env.VITE_PAYPAL_EMAIL || 'leyanispuentes@gmail.com';
 
   // Compute subscription period details
   const subInfo = getSubscriptionPeriodInfo(userProfile);
@@ -579,6 +680,111 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <p className="text-xs text-slate-300 leading-relaxed">
           Cada entrenador dispone de su propio entorno de trabajo local independiente. Todos tus datos (entrenamientos guardados, jugadoras y registros) permanecen limpios y privados en tu espacio de trabajo.
         </p>
+      </div>
+
+      {/* Activación por Bizum / Código VIP Card */}
+      <div className="bg-gradient-to-br from-amber-950/70 via-slate-900 to-emerald-950/70 text-white p-6 rounded-2xl border border-amber-500/30 shadow-xl space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2 border-b border-amber-500/20 pb-3">
+          <div className="flex items-center gap-2.5 text-amber-400 font-extrabold text-sm uppercase tracking-wide">
+            <Ticket className="w-5 h-5 text-amber-400" />
+            <span>Activar Suscripción Pro mediante Bizum o Código VIP</span>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Activación Inmediata
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-300 leading-relaxed">
+          Si has realizado el pago de tu suscripción por <strong>Bizum</strong> o te han facilitado un <strong>Código de Activación Pro</strong>, introdúcelo a continuación para activar tu cuenta de inmediato.
+        </p>
+
+        {activationMessage && (
+          <div
+            className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
+              activationMessage.isError
+                ? 'bg-rose-950/80 border-rose-600/80 text-rose-200'
+                : 'bg-emerald-950/80 border-emerald-600/80 text-emerald-200'
+            }`}
+          >
+            {activationMessage.isError ? (
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            ) : (
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span>{activationMessage.text}</span>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+          <input
+            type="text"
+            value={activationCodeInput}
+            onChange={(e) => setActivationCodeInput(e.target.value)}
+            placeholder={`Ej: ${getCurrentCodeStatus().monthlyCurrentCode}, ${getCurrentCodeStatus().annualCurrentCode}`}
+            className="flex-1 px-4 py-2.5 bg-slate-950 border border-amber-500/40 rounded-xl text-amber-300 font-mono text-sm font-bold uppercase tracking-wider focus:ring-2 focus:ring-amber-400 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleActivateWithCode}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md shadow-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <Sparkles className="w-4 h-4 fill-slate-950" />
+            <span>Activar Suscripción Pro</span>
+          </button>
+        </div>
+
+        {(() => {
+          const status = getCurrentCodeStatus();
+          return (
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/20 space-y-2 text-xs">
+              <div className="flex items-center justify-between font-bold text-amber-400 border-b border-white/10 pb-1.5">
+                <span>Secuencia de Códigos Únicos Activos (1 solo uso por código):</span>
+                <span className="text-[10px] text-slate-400 font-normal">Auto-Secuencial</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex flex-col gap-0.5">
+                  <span className="text-slate-300 font-bold">Plan 5€/mes (Suma +2):</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Código Activo:</span>
+                    <strong className="text-emerald-300 font-mono font-black text-xs">{status.monthlyCurrentCode}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Siguiente código:</span>
+                    <span className="font-mono text-slate-300">{status.monthlyNextCode}</span>
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-500/30 flex flex-col gap-0.5">
+                  <span className="text-slate-300 font-bold">Plan 60€/año (Suma +3):</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Código Activo:</span>
+                    <strong className="text-amber-300 font-mono font-black text-xs">{status.annualCurrentCode}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Siguiente código:</span>
+                    <span className="font-mono text-slate-300">{status.annualNextCode}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-white/10 text-[11px] text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+            <span>¿Pago por Bizum? Teléfono: <strong className="text-emerald-300 font-mono">{BIZUM_PHONE}</strong></span>
+          </div>
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Deseo activar mi suscripción Pro en CoachMind por Bizum.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-400 font-bold hover:underline flex items-center gap-1"
+          >
+            <MessageSquare className="w-3 h-3" />
+            <span>Hablar por WhatsApp</span>
+          </a>
+        </div>
       </div>
 
       {/* Google Sheets Sync & Database Section */}

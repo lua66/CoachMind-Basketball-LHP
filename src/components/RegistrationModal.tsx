@@ -21,6 +21,9 @@ import {
   LogIn,
   KeyRound,
   Calendar,
+  MessageSquare,
+  Smartphone,
+  Ticket,
 } from 'lucide-react';
 import { 
   auth, 
@@ -30,6 +33,7 @@ import {
   signInWithPopup 
 } from '../lib/firebase';
 import { saveCoachProfileToFirestore } from '../lib/firebaseSync';
+import { validateAndConsumeCode, getCurrentCodeStatus } from '../utils/activationCodes';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -105,7 +109,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   // Payment Fields - Step 2
   const [subscriptionPlan, setSubscriptionPlan] = useState<'monthly' | 'annual'>('monthly');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'bizum' | 'code'>('card');
+  const [bizumPhone, setBizumPhone] = useState(import.meta.env.VITE_BIZUM_PHONE || '+34 608180231');
+  const paypalEmailEnv = import.meta.env.VITE_PAYPAL_EMAIL || 'leyanispuentes@gmail.com';
+  const [activationCode, setActivationCode] = useState('');
 
   // Card details
   const [cardNumber, setCardNumber] = useState('');
@@ -302,6 +309,30 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }
     }
 
+    let activePlan = subscriptionPlan;
+
+    if (paymentMethod === 'code') {
+      if (!activationCode.trim()) {
+        setErrorMsg('Por favor introduce tu código de activación o cupón VIP.');
+        return;
+      }
+      const codeResult = validateAndConsumeCode(activationCode);
+      if (!codeResult.success) {
+        setErrorMsg(codeResult.message);
+        return;
+      }
+      if (codeResult.plan) {
+        activePlan = codeResult.plan;
+        setSubscriptionPlan(codeResult.plan);
+      }
+      // Also notify server backend
+      fetch('/api/activation-codes/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: activationCode }),
+      }).catch(() => {});
+    }
+
     setIsProcessingPayment(true);
 
     try {
@@ -388,12 +419,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           month: '2-digit',
           year: 'numeric',
         }),
-        subscriptionPlan,
+        subscriptionPlan: activePlan,
         paymentMethod,
         cardLast4: paymentMethod === 'card' ? last4 : undefined,
         subscriptionStatus: 'active',
-        creditsRemaining: subscriptionPlan === 'annual' ? 1000 : 500,
-        totalCredits: subscriptionPlan === 'annual' ? 1000 : 500,
+        creditsRemaining: activePlan === 'annual' ? 1000 : 500,
+        totalCredits: activePlan === 'annual' ? 1000 : 500,
       };
 
       // Save to Firebase Firestore
@@ -417,7 +448,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           nivelEquipo: profile.teamLevel,
           categoriaEquipo: profile.teamCategory,
           plan: profile.subscriptionPlan === 'monthly' ? 'Mensual (5 € / mes)' : 'Anual (60 € / año)',
-          metodoPago: profile.paymentMethod === 'paypal' ? 'PayPal' : `Tarjeta Visa/Mastercard (•••• ${last4})`,
+          metodoPago: profile.paymentMethod === 'paypal'
+            ? 'PayPal'
+            : profile.paymentMethod === 'bizum'
+            ? 'Bizum / WhatsApp'
+            : profile.paymentMethod === 'code'
+            ? `Código VIP (${activationCode || 'BIZUMPRO'})`
+            : `Tarjeta Visa/Mastercard (•••• ${last4})`,
+          codigoActivacion: activationCode ? activationCode : profile.paymentMethod === 'bizum' ? 'BIZUM' : 'N/A',
           estado: 'Suscripción Activa',
         };
 
@@ -1003,39 +1041,70 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 2. Método de Pago Seguro
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {/* Tarjeta */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('card')}
-                  className={`p-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
                     paymentMethod === 'card'
-                      ? 'bg-blue-600/20 border-blue-400 text-white'
+                      ? 'bg-blue-600/20 border-blue-400 text-white shadow-md'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <CreditCard className="w-4 h-4 text-blue-400" />
-                  <span>Tarjeta Visa / Mastercard</span>
+                  <span>Tarjeta</span>
                 </button>
 
                 {/* PayPal */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('paypal')}
-                  className={`p-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
                     paymentMethod === 'paypal'
-                      ? 'bg-amber-500/20 border-amber-400 text-white'
+                      ? 'bg-sky-600/20 border-sky-400 text-white shadow-md'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
-                  <span className="font-extrabold text-blue-300 italic tracking-tight">Pay</span>
-                  <span className="font-extrabold text-sky-400 italic tracking-tight -ml-1.5">Pal</span>
+                  <div className="flex items-center">
+                    <span className="font-extrabold text-blue-300 italic tracking-tight text-xs">Pay</span>
+                    <span className="font-extrabold text-sky-400 italic tracking-tight text-xs -ml-0.5">Pal</span>
+                  </div>
+                  <span>PayPal</span>
+                </button>
+
+                {/* Bizum / WhatsApp */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('bizum')}
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                    paymentMethod === 'bizum'
+                      ? 'bg-emerald-600/20 border-emerald-400 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 text-emerald-400" />
+                  <span>Bizum / WhatsApp</span>
+                </button>
+
+                {/* Código de Activación */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('code')}
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                    paymentMethod === 'code'
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <Ticket className="w-4 h-4 text-amber-400" />
+                  <span>Código / Cupón</span>
                 </button>
               </div>
             </div>
 
             {/* Formulario según Método */}
-            {paymentMethod === 'card' ? (
+            {paymentMethod === 'card' && (
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span className="font-bold text-slate-200">Datos de la Tarjeta Internacional</span>
@@ -1110,7 +1179,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   </div>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {paymentMethod === 'paypal' && (
               <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-400 flex items-center justify-center mx-auto">
                   <span className="font-black text-lg italic">P</span>
@@ -1118,8 +1189,95 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <div>
                   <h4 className="text-xs font-bold text-white">Pago Exprés con PayPal</h4>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Se asociará tu suscripción ({subscriptionPlan === 'monthly' ? '5 € / mes' : '60 € / año'}) de forma rápida y cifrada a través de tu cuenta PayPal ({email || 'tu-correo@paypal.com'}).
+                    Pago de suscripción ({subscriptionPlan === 'monthly' ? '5 € / mes' : '60 € / año'}) hacia la cuenta PayPal: <strong className="text-sky-300 font-mono">{paypalEmailEnv}</strong>
                   </p>
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'bizum' && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-950/80 to-slate-950 border border-emerald-500/40 space-y-3 text-left">
+                <div className="flex items-center gap-2 text-emerald-400 font-extrabold text-xs">
+                  <Smartphone className="w-4 h-4 text-emerald-400" />
+                  <span>Instrucciones de Pago por Bizum</span>
+                </div>
+
+                <div className="bg-slate-900/90 p-3 rounded-xl border border-emerald-500/20 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Teléfono para Bizum:</span>
+                    <span className="font-extrabold text-emerald-300 text-sm select-all">{bizumPhone}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Importe exacto:</span>
+                    <span className="font-black text-white text-sm">
+                      {subscriptionPlan === 'monthly' ? '5,00 €' : '60,00 €'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-300">
+                    <span className="text-slate-400">Concepto recomendado:</span>
+                    <span className="font-bold text-amber-300 text-xs">{email || 'CoachMind Pro'}</span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Realiza el Bizum al número indicado y pulsa el botón de abajo para enviar el comprobante o notificación directa por WhatsApp. Tu cuenta quedará activada y registrada de inmediato.
+                </p>
+
+                <a
+                  href={`https://wa.me/${bizumPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    `Hola! He realizado el Bizum para mi suscripción CoachMind Pro.\n\n` +
+                    `📌 Nombre: ${firstName} ${lastName}\n` +
+                    `📧 Email: ${email}\n` +
+                    `💳 Plan: ${subscriptionPlan === 'annual' ? 'Anual (60€)' : 'Mensual (5€)'}\n` +
+                    `Adjunto mi comprobante para la verificación.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all cursor-pointer no-underline"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Enviar Comprobante por WhatsApp</span>
+                </a>
+              </div>
+            )}
+
+            {paymentMethod === 'code' && (
+              <div className="p-4 rounded-2xl bg-slate-950 border border-amber-500/30 space-y-3">
+                <div className="flex items-center gap-2 text-amber-400 font-extrabold text-xs">
+                  <Ticket className="w-4 h-4 text-amber-400" />
+                  <span>Activa con tu Código / Cupón VIP</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  Si has pagado por Bizum, transferencia o te han proporcionado un código de activación, introdúcelo aquí para activar tu suscripción Pro de inmediato.
+                </p>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1">
+                    Código de Activación Pro *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={activationCode}
+                    onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                    placeholder={`Ej: ${getCurrentCodeStatus().monthlyCurrentCode}, ${getCurrentCodeStatus().annualCurrentCode}`}
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-amber-500/40 rounded-xl text-amber-300 font-mono text-sm font-black tracking-widest uppercase focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                  />
+                  {(() => {
+                    const status = getCurrentCodeStatus();
+                    return (
+                      <div className="mt-2 p-2 rounded-lg bg-slate-900/90 border border-amber-500/20 text-[10px] text-slate-300 space-y-1">
+                        <span className="font-bold text-amber-400 block">Códigos activos de 1 solo uso en secuencia:</span>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span>Plan Mensual (5€):</span>
+                          <span className="font-mono font-extrabold text-emerald-300">{status.monthlyCurrentCode}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span>Plan Anual (60€):</span>
+                          <span className="font-mono font-extrabold text-amber-300">{status.annualCurrentCode}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

@@ -948,7 +948,7 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
         const spreadsheetUrl = sheetData.spreadsheetUrl || `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
 
         // Populate Subscribed Coaches Sheet
-        const subHeaders = ['ID', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Club', 'Nivel Equipo', 'Categoría', 'Plan Suscripción', 'Método Pago', 'Créditos IA', 'Fecha Alta', 'Estado'];
+        const subHeaders = ['ID', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Club', 'Nivel Equipo', 'Categoría', 'Plan Suscripción', 'Método Pago', 'Código Activación / Ref', 'Créditos IA', 'Fecha Alta', 'Estado'];
         const subRows = subscribedCoaches.map((c: any) => [
           c.id || '',
           c.firstName || '',
@@ -960,12 +960,13 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
           c.teamCategory || '',
           c.subscriptionPlan || 'Mensual',
           c.paymentMethod || 'Tarjeta',
+          c.activationCode || c.codigoActivacion || c.codigo || (c.paymentMethod?.includes('(') ? c.paymentMethod.match(/\(([^)]+)\)/)?.[1] : 'N/A'),
           c.creditsRemaining !== undefined ? c.creditsRemaining : 500,
           c.registeredAt || '',
           c.status || 'Activa',
         ]);
 
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'Entrenadores Suscritos (Pro)'!A1:M1?valueInputOption=USER_ENTERED`, {
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'Entrenadores Suscritos (Pro)'!A1:N1?valueInputOption=USER_ENTERED`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -1028,6 +1029,140 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
       error: error?.message || 'Error al procesar la sincronización con Google Sheets',
     });
   }
+});
+
+// In-memory store for single-use activation codes sequence
+let monthlyCodeIndex = 0; // 0 => BIZUMPRO01, 1 => BIZUMPRO03, 2 => BIZUMPRO05... (+2)
+let annualCodeIndex = 0;  // 0 => PRO202601,  1 => PRO202604,  2 => PRO202607... (+3)
+const usedActivationCodes = new Set<string>();
+
+function formatMonthlyCode(index: number): string {
+  const num = 1 + index * 2;
+  return `BIZUMPRO${String(num).padStart(2, '0')}`;
+}
+
+function formatAnnualCode(index: number): string {
+  const num = 1 + index * 3;
+  return `PRO2026${String(num).padStart(2, '0')}`;
+}
+
+// Get current activation code status
+app.get('/api/activation-codes/status', (_req, res) => {
+  return res.json({
+    success: true,
+    monthlyCurrentCode: formatMonthlyCode(monthlyCodeIndex),
+    monthlyNextCode: formatMonthlyCode(monthlyCodeIndex + 1),
+    annualCurrentCode: formatAnnualCode(annualCodeIndex),
+    annualNextCode: formatAnnualCode(annualCodeIndex + 1),
+    usedCodes: Array.from(usedActivationCodes),
+  });
+});
+
+// Validate and consume single-use activation code
+app.post('/api/activation-codes/validate', (req, res) => {
+  const { code: rawCode } = req.body;
+  const code = (rawCode || '').trim().toUpperCase().replace(/\s+/g, '');
+
+  if (!code) {
+    return res.status(400).json({ success: false, message: 'Se requiere un código de activación.' });
+  }
+
+  if (usedActivationCodes.has(code)) {
+    return res.status(400).json({
+      success: false,
+      message: `El código "${code}" ya ha sido utilizado anteriormente.`,
+      used: true,
+    });
+  }
+
+  const currentMonthly = formatMonthlyCode(monthlyCodeIndex);
+  const currentAnnual = formatAnnualCode(annualCodeIndex);
+
+  // Check Monthly Code
+  if (code === currentMonthly) {
+    usedActivationCodes.add(code);
+    monthlyCodeIndex++;
+    const nextCode = formatMonthlyCode(monthlyCodeIndex);
+    return res.json({
+      success: true,
+      message: `Código ${code} activado con éxito (Plan Mensual 5€). Próximo código único: ${nextCode}.`,
+      plan: 'monthly',
+      code,
+      nextExpectedCode: nextCode,
+      credits: 500,
+    });
+  }
+
+  // Check Annual Code
+  if (code === currentAnnual) {
+    usedActivationCodes.add(code);
+    annualCodeIndex++;
+    const nextCode = formatAnnualCode(annualCodeIndex);
+    return res.json({
+      success: true,
+      message: `Código ${code} activado con éxito (Plan Anual 60€). Próximo código único: ${nextCode}.`,
+      plan: 'annual',
+      code,
+      nextExpectedCode: nextCode,
+      credits: 1000,
+    });
+  }
+
+  // Check pattern for monthly: BIZUMPROxx
+  if (code.startsWith('BIZUMPRO')) {
+    const numPart = parseInt(code.replace('BIZUMPRO', ''), 10);
+    if (!isNaN(numPart) && numPart >= 1 && numPart % 2 === 1) {
+      const targetIdx = (numPart - 1) / 2;
+      usedActivationCodes.add(code);
+      monthlyCodeIndex = Math.max(monthlyCodeIndex, targetIdx + 1);
+      const nextCode = formatMonthlyCode(monthlyCodeIndex);
+      return res.json({
+        success: true,
+        message: `Código ${code} verificado. Plan Mensual 5€ activado. Próximo código activo: ${nextCode}.`,
+        plan: 'monthly',
+        code,
+        nextExpectedCode: nextCode,
+        credits: 500,
+      });
+    }
+  }
+
+  // Check pattern for annual: PRO2026xx
+  if (code.startsWith('PRO2026')) {
+    const numPart = parseInt(code.replace('PRO2026', ''), 10);
+    if (!isNaN(numPart) && numPart >= 1 && (numPart - 1) % 3 === 0) {
+      const targetIdx = (numPart - 1) / 3;
+      usedActivationCodes.add(code);
+      annualCodeIndex = Math.max(annualCodeIndex, targetIdx + 1);
+      const nextCode = formatAnnualCode(annualCodeIndex);
+      return res.json({
+        success: true,
+        message: `Código ${code} verificado. Plan Anual 60€ activado. Próximo código activo: ${nextCode}.`,
+        plan: 'annual',
+        code,
+        nextExpectedCode: nextCode,
+        credits: 1000,
+      });
+    }
+  }
+
+  // General fallback codes
+  if (['BIZUMPRO', 'PRO2026', 'COACHMIND', 'VIPPRO', 'PRO5'].includes(code)) {
+    const isAnnual = code.includes('2026') || code.includes('VIP');
+    usedActivationCodes.add(code);
+    return res.json({
+      success: true,
+      message: `Código especial ${code} activado.`,
+      plan: isAnnual ? 'annual' : 'monthly',
+      code,
+      credits: isAnnual ? 1000 : 500,
+    });
+  }
+
+  return res.status(400).json({
+    success: false,
+    message: `Código no válido. Código activo de 1 solo uso para Plan Mensual (5€): "${currentMonthly}", Plan Anual (60€): "${currentAnnual}".`,
+  });
 });
 
 // Automatic background endpoint for new coach registrations (Subscribed or Free Trial)

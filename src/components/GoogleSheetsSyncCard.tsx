@@ -18,6 +18,7 @@ export interface CoachRecord {
   isSubscribed: boolean;
   subscriptionPlan?: string;
   paymentMethod?: string;
+  activationCode?: string;
   creditsRemaining?: number;
   registeredAt: string;
   status: string;
@@ -169,6 +170,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
       isSubscribed: isPaid,
       subscriptionPlan: rec.plan || (isPaid ? 'Mensual (5€/mes)' : 'Invitado'),
       paymentMethod: rec.metodoPago || (isPaid ? 'Tarjeta' : 'Sin Pago'),
+      activationCode: rec.codigoActivacion || rec.codigo || rec.activationCode || (rec.metodoPago?.includes('(') ? rec.metodoPago.match(/\(([^)]+)\)/)?.[1] : isPaid ? 'BIZUMPRO01' : 'N/A'),
       creditsRemaining: isPaid ? 500 : 100,
       registeredAt: rec.fechaRegistro || rec.registeredAt || new Date().toISOString().split('T')[0],
       status: rec.estado || (isPaid ? 'Activa (Pro)' : 'Prueba Gratuita'),
@@ -205,9 +207,14 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
         : 'Prueba Gratuita (Invitado)',
       paymentMethod: userProfile.paymentMethod === 'paypal'
         ? 'PayPal'
+        : userProfile.paymentMethod === 'bizum'
+        ? 'Bizum / WhatsApp'
+        : userProfile.paymentMethod === 'code'
+        ? 'Código / Cupón VIP'
         : userProfile.cardLast4
         ? `Tarjeta (•••• ${userProfile.cardLast4})`
         : 'Tarjeta Visa/Mastercard',
+      activationCode: userProfile.paymentMethod === 'bizum' || userProfile.paymentMethod === 'code' ? 'BIZUMPRO' : 'N/A',
       creditsRemaining: userProfile.creditsRemaining ?? (isPaidUser ? 500 : 100),
       registeredAt: userProfile.registeredAt || new Date().toLocaleDateString('es-ES'),
       status: isPaidUser ? 'Activa (Pro)' : 'Prueba Gratuita (Invitado)',
@@ -268,7 +275,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
 
   const handleDownloadCSV = (type: 'subscribed' | 'nonsubscribed') => {
     const list = type === 'subscribed' ? subscribedList : nonSubscribedList;
-    const headers = ['ID', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Club', 'Nivel Equipo', 'Categoría', 'Plan', 'Método Pago', 'Estado'];
+    const headers = ['ID', 'Nombre', 'Apellidos', 'Email', 'Teléfono', 'Club', 'Nivel Equipo', 'Categoría', 'Plan', 'Método Pago', 'Código Activación', 'Estado'];
     
     const rows = list.map((c) => [
       c.id,
@@ -281,6 +288,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
       `"${c.teamCategory}"`,
       `"${c.subscriptionPlan || '-'}"`,
       `"${c.paymentMethod || '-'}"`,
+      `"${c.activationCode || 'N/A'}"`,
       `"${c.status}"`,
     ]);
 

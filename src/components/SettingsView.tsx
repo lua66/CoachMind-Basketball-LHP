@@ -27,9 +27,8 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { getSubscriptionPeriodInfo, downloadLibraryBackup } from '../utils/subscriptionUtils';
-import { validateAndConsumeCode, getCurrentCodeStatus } from '../utils/activationCodes';
+import { validateAndConsumeCode } from '../utils/activationCodes';
 import { ReviewModal } from './ReviewModal';
-import { GoogleSheetsSyncCard } from './GoogleSheetsSyncCard';
 
 interface SettingsViewProps {
   userProfile?: UserProfile | null;
@@ -720,7 +719,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             type="text"
             value={activationCodeInput}
             onChange={(e) => setActivationCodeInput(e.target.value)}
-            placeholder={`Ej: ${getCurrentCodeStatus().monthlyCurrentCode}, ${getCurrentCodeStatus().annualCurrentCode}`}
+            placeholder="Introduce tu código de activación (Ej: BIZUM-PRO-XXXX)"
             className="flex-1 px-4 py-2.5 bg-slate-950 border border-amber-500/40 rounded-xl text-amber-300 font-mono text-sm font-bold uppercase tracking-wider focus:ring-2 focus:ring-amber-400 focus:outline-none"
           />
           <button
@@ -733,50 +732,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
 
-        {(() => {
-          const status = getCurrentCodeStatus();
-          return (
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/20 space-y-2 text-xs">
-              <div className="flex items-center justify-between font-bold text-amber-400 border-b border-white/10 pb-1.5">
-                <span>Secuencia de Códigos Únicos Activos (1 solo uso por código):</span>
-                <span className="text-[10px] text-slate-400 font-normal">Auto-Secuencial</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex flex-col gap-0.5">
-                  <span className="text-slate-300 font-bold">Plan 5€/mes (Suma +2):</span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Código Activo:</span>
-                    <strong className="text-emerald-300 font-mono font-black text-xs">{status.monthlyCurrentCode}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Siguiente código:</span>
-                    <span className="font-mono text-slate-300">{status.monthlyNextCode}</span>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-500/30 flex flex-col gap-0.5">
-                  <span className="text-slate-300 font-bold">Plan 60€/año (Suma +3):</span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Código Activo:</span>
-                    <strong className="text-amber-300 font-mono font-black text-xs">{status.annualCurrentCode}</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Siguiente código:</span>
-                    <span className="font-mono text-slate-300">{status.annualNextCode}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
         <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-white/10 text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5">
             <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-            <span>¿Pago por Bizum? Teléfono: <strong className="text-emerald-300 font-mono">{BIZUM_PHONE}</strong></span>
+            <span>Activación mediante Bizum / WhatsApp</span>
           </div>
           <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Deseo activar mi suscripción Pro en CoachMind por Bizum.')}`}
+            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Deseo activar mi suscripción Pro en CoachMind.')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-emerald-400 font-bold hover:underline flex items-center gap-1"
@@ -786,9 +748,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </a>
         </div>
       </div>
-
-      {/* Google Sheets Sync & Database Section */}
-      <GoogleSheetsSyncCard userProfile={userProfile} />
 
       {/* Cancellation Modal */}
       {isCancelModalOpen && (

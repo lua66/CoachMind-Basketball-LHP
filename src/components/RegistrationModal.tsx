@@ -33,7 +33,7 @@ import {
   signInWithPopup 
 } from '../lib/firebase';
 import { saveCoachProfileToFirestore } from '../lib/firebaseSync';
-import { validateAndConsumeCode, getCurrentCodeStatus } from '../utils/activationCodes';
+import { validateAndConsumeCode } from '../utils/activationCodes';
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -1259,25 +1259,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                     required
                     value={activationCode}
                     onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-                    placeholder={`Ej: ${getCurrentCodeStatus().monthlyCurrentCode}, ${getCurrentCodeStatus().annualCurrentCode}`}
+                    placeholder="Ej: CÓDIGO-ACTIVACIÓN-PRO"
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-amber-500/40 rounded-xl text-amber-300 font-mono text-sm font-black tracking-widest uppercase focus:ring-2 focus:ring-amber-400 focus:outline-none"
                   />
-                  {(() => {
-                    const status = getCurrentCodeStatus();
-                    return (
-                      <div className="mt-2 p-2 rounded-lg bg-slate-900/90 border border-amber-500/20 text-[10px] text-slate-300 space-y-1">
-                        <span className="font-bold text-amber-400 block">Códigos activos de 1 solo uso en secuencia:</span>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span>Plan Mensual (5€):</span>
-                          <span className="font-mono font-extrabold text-emerald-300">{status.monthlyCurrentCode}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span>Plan Anual (60€):</span>
-                          <span className="font-mono font-extrabold text-amber-300">{status.annualCurrentCode}</span>
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </div>
               </div>
             )}

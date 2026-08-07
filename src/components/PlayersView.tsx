@@ -110,6 +110,8 @@ export const PlayersView: React.FC<PlayersViewProps> = ({
   onDeletePlayer,
   onUpdatePlayer,
   onNavigateToStats,
+  userProfile,
+  onOpenTrialModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<PlayerRole | null>(null);
@@ -148,6 +150,10 @@ export const PlayersView: React.FC<PlayersViewProps> = ({
   };
 
   const handleOpenAddModal = (defaultRole?: PlayerRole) => {
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
     if (defaultRole) {
       setModalRole(defaultRole);
     } else if (selectedRole) {
@@ -162,6 +168,10 @@ export const PlayersView: React.FC<PlayersViewProps> = ({
   };
 
   const handleOpenEditModal = (player: Player) => {
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
     setEditingPlayer(player);
     setEditName(player.name);
     setEditJerseyNumber(player.jerseyNumber);

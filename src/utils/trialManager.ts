@@ -46,17 +46,20 @@ export function getWeeklyCreditLimit(_userProfile: UserProfile | null): number {
 }
 
 /**
- * Checks and consumes credit for a specific section - always allowed in Free Access model.
+ * Checks and consumes credit for a specific section - returns true for subscribed coaches, false for guests to trigger subscription modal on actions.
  */
 export function consumeTrialAction(
-  _userProfile: UserProfile | null,
+  userProfile: UserProfile | null,
   _cardId: string = 'general',
   onCreditsConsumed?: (remainingCredits: number) => void
 ): boolean {
-  if (onCreditsConsumed) {
-    onCreditsConsumed(999999);
+  if (userProfile) {
+    if (onCreditsConsumed) {
+      onCreditsConsumed(999999);
+    }
+    return true;
   }
-  return true;
+  return false;
 }
 
 /**

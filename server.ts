@@ -1210,7 +1210,7 @@ app.post('/api/sync-google-sheet', async (req, res) => {
       }
     }
 
-    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxYbc2PV4Y97s_mPeTfPoGSFZe2sBZCR4asxwTj7ZXKkezzPL4bg-F55bApMqTh1ebI/exec';
+    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbyNhR0oVidSEd8llHmebFMBq7DNC2MqUWZWoDPz17mrHgJ_KZJ8PkRYkh5yRsWr-MQi/exec';
 
     if (webhookUrl) {
       try {

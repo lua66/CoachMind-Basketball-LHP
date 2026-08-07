@@ -236,118 +236,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Configuración & Ficha de Entrenador
+              Configuración & Preferencias
             </h1>
             <p className="text-xs text-slate-500">
-              Datos de la suscripción Pro, perfil del club y preferencias de la aplicación
+              Datos de contacto, información del club y gestión del sistema
             </p>
           </div>
         </div>
 
         <div>
-          {userProfile ? (
-            <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 font-black text-xs uppercase flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              Suscripción Pro Activa
-            </span>
-          ) : (
+          {userProfile && onUpdateProfile && (
             <button
-              onClick={onOpenRegisterModal}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              onClick={() => {
+                if (confirm('¿Deseas cerrar la sesión en este navegador?')) {
+                  onUpdateProfile(null);
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-xs border border-red-200 transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <Lock className="w-3.5 h-3.5 text-white" />
-              <span>Registrar Cuenta Pro</span>
+              <X className="w-3.5 h-3.5 text-red-500" />
+              <span>Cerrar Sesión</span>
             </button>
           )}
-        </div>
-      </div>
-
-      {/* License & WhatsApp Consultation Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-amber-500/30 shadow-xl space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-300" />
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-black tracking-wider text-emerald-400 block">
-                Plataforma 100% Gratuita e Ilimitada
-              </span>
-              <h4 className="text-base font-extrabold text-white">
-                {userProfile
-                  ? `Licencia de Entrenador: ${userProfile.firstName} ${userProfile.lastName}`
-                  : 'Modo Libre / Acceso Completo Gratuito'}
-              </h4>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={onOpenRegisterModal}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md"
-            >
-              {userProfile ? 'Ver / Editar Ficha' : 'Obtener Licencia Gratuita'}
-            </button>
-            {userProfile && onUpdateProfile && (
-              <button
-                onClick={() => {
-                  if (confirm('¿Deseas cerrar la sesión y borrar la ficha guardada en este navegador?')) {
-                    onUpdateProfile(null);
-                  }
-                }}
-                className="px-3.5 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-extrabold text-xs border border-red-500/30 transition-all cursor-pointer flex items-center gap-1"
-              >
-                <X className="w-3.5 h-3.5 text-red-400" />
-                <span>Cerrar Sesión / Limpiar Ficha</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800 text-xs">
-          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Uso de Herramientas</span>
-            <span className="text-emerald-300 font-black text-sm mt-0.5 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              Ilimitado Sin Restricciones
-            </span>
-          </div>
-
-          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Estado de Licencia</span>
-            <span className="text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              {userProfile ? 'Licencia Verificada' : 'Acceso Libre'}
-            </span>
-          </div>
-
-          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold">Asesoría Táctica 1 a 1</span>
-            <span className="text-amber-300 font-bold mt-0.5 block">
-              Disponible por WhatsApp
-            </span>
-          </div>
-        </div>
-
-        {/* Banner de Asesoría por WhatsApp */}
-        <div className="mt-3 p-4 rounded-xl bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div>
-            <span className="font-extrabold text-white text-sm block">¿Deseas Asesoría Individualizada para tu Equipo?</span>
-            <p className="text-slate-300 text-[11px] mt-0.5">
-              Análisis táctico 1 a 1, estudio de rivales y preparación de partidos clave con nuestro Entrenador Experto.
-            </p>
-          </div>
-          <a
-            href={`https://wa.me/34608180231?text=${encodeURIComponent(
-              `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-md shrink-0 no-underline"
-          >
-            <Smartphone className="w-4 h-4 text-slate-950" />
-            <span>Pedir Asesoría por WhatsApp</span>
-          </a>
         </div>
       </div>
 

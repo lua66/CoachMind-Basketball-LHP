@@ -16,6 +16,7 @@ import {
   Check,
   X,
   MessageSquare,
+  Award,
 } from 'lucide-react';
 import { ViewMode, UserProfile } from '../types';
 
@@ -28,6 +29,7 @@ interface SidebarProps {
   onMobileClose?: () => void;
   userProfile?: UserProfile | null;
   onOpenRegisterModal?: () => void;
+  onOpenWhatsAppInterview?: () => void;
   authUser?: any;
   onSignOut?: () => void;
   onClearProfile?: () => void;
@@ -42,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose,
   userProfile,
   onOpenRegisterModal,
+  onOpenWhatsAppInterview,
   authUser,
   onSignOut,
   onClearProfile,
@@ -60,6 +63,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'dashboard' as ViewMode,
       label: 'Dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      id: 'coach' as ViewMode,
+      label: 'Entrenador',
+      icon: Award,
     },
     {
       id: 'calendar' as ViewMode,
@@ -121,7 +129,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0B132B] text-slate-200 select-none">
       {/* Brand Header */}
-      <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-800/80">
+      <div
+        onClick={() => handleItemClick('dashboard')}
+        data-allow-nav="true"
+        className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-800/80 cursor-pointer hover:bg-slate-800/40 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 text-white font-bold shrink-0">
             <Dumbbell className="w-5 h-5 text-white" />
@@ -139,7 +151,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Mobile Close Button */}
         {onMobileClose && (
           <button
-            onClick={onMobileClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMobileClose();
+            }}
             className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             aria-label="Cerrar menú"
           >
@@ -193,100 +208,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Footer Account & Firebase / Cloud SQL Panel */}
+      {/* Footer Account / Modo Invitado Panel */}
       <div className="p-3.5 m-3 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-2">
-        {authUser ? (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Cloud SQL & Auth Activo
+        {onOpenWhatsAppInterview && (
+          <button
+            type="button"
+            onClick={onOpenWhatsAppInterview}
+            className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all cursor-pointer shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 text-center"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-300" />
+            <span className="truncate">Entrevista por WhatsApp</span>
+          </button>
+        )}
+
+        {authUser || userProfile ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-emerald-400 flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+                Registrado
               </span>
             </div>
-            <p className="text-xs font-bold text-white truncate">{userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : authUser.email}</p>
-            <p className="text-[10px] text-slate-400 truncate">{userProfile?.club || authUser.email}</p>
-            
+
             <button
               type="button"
-              onClick={onSignOut}
-              className="mt-2.5 w-full py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-300 text-[11px] font-bold border border-slate-700/60 hover:border-red-700/50 transition-all cursor-pointer text-center"
+              onClick={onOpenRegisterModal}
+              className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 text-center"
             >
-              Cerrar Sesión
-            </button>
-          </div>
-        ) : userProfile ? (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                Entrenador Registrado
+              <Check className="w-4 h-4 text-slate-950 stroke-[3]" />
+              <span className="truncate">
+                {userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : 'Licencia Activa'}
               </span>
-            </div>
-            <p className="text-xs font-extrabold text-white truncate">{userProfile.firstName} {userProfile.lastName}</p>
-            <p className="text-[10px] text-slate-400 truncate">{userProfile.club || 'CoachMind Baloncesto'}</p>
-            
+            </button>
+
             <button
               type="button"
               onClick={() => {
+                if (onSignOut) onSignOut();
                 if (onClearProfile) onClearProfile();
               }}
-              className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold border border-red-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center"
+              className="w-full py-1.5 px-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[11px] font-bold border border-red-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center"
             >
               <X className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span>Cerrar Sesión / Limpiar Ficha</span>
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         ) : (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Modo Invitado</span>
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider font-extrabold text-amber-400 flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-sm shadow-amber-500/50" />
+                Modo Invitado
+              </span>
             </div>
-            <p className="text-xs font-bold text-slate-200">Acceso Libre Sin Registro</p>
-            
-            {onOpenRegisterModal && (
-              <div className="mt-2 space-y-1.5">
-                <button
-                  type="button"
-                  onClick={onOpenRegisterModal}
-                  className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-[11px] font-black transition-all cursor-pointer shadow-md shadow-orange-500/20 text-center"
-                >
-                  Iniciar Sesión / Registro Gratis
-                </button>
-              </div>
-            )}
+
+            <button
+              type="button"
+              onClick={onOpenRegisterModal}
+              className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 text-center"
+            >
+              <span className="w-2 h-2 rounded-full bg-slate-950" />
+              <span>Modo Invitado Activo</span>
+            </button>
           </div>
         )}
-
-        <a
-          href={`https://wa.me/34608180231?text=${encodeURIComponent(
-            `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2.5 w-full py-2 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-black border border-emerald-500/40 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center no-underline"
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Asesoría 1 a 1 (WhatsApp)</span>
-        </a>
-
-        <button
-          type="button"
-          onClick={handleCopyCleanLink}
-          className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center"
-        >
-          {copiedCleanLink ? (
-            <>
-              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span className="text-emerald-300">¡Enlace Limpio Copiado!</span>
-            </>
-          ) : (
-            <>
-              <Share2 className="w-3 h-3 text-amber-400 shrink-0" />
-              <span>Copiar Enlace Limpio para Compartir</span>
-            </>
-          )}
-        </button>
       </div>
     </div>
   );
@@ -294,7 +279,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Desktop Sticky Sidebar (hidden on mobile) */}
-      <aside className="hidden md:flex w-64 shrink-0 h-screen sticky top-0 border-r border-slate-800/80 shadow-xl z-30">
+      <aside data-sidebar="true" data-allow-nav="true" className="hidden md:flex w-64 shrink-0 h-screen sticky top-0 border-r border-slate-800/80 shadow-xl z-30">
         {sidebarContent}
       </aside>
 
@@ -307,7 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={onMobileClose}
           />
           {/* Slide-over panel */}
-          <div className="relative w-72 max-w-[80vw] bg-[#0B132B] h-full shadow-2xl z-10 flex flex-col">
+          <div data-sidebar="true" data-allow-nav="true" className="relative w-72 max-w-[80vw] bg-[#0B132B] h-full shadow-2xl z-10 flex flex-col">
             {sidebarContent}
           </div>
         </div>

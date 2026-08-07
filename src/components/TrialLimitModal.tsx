@@ -50,19 +50,19 @@ export const TrialLimitModal: React.FC<TrialLimitModalProps> = ({
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold uppercase tracking-wide">
               <Sparkles className="w-3 h-3" />
-              <span>{isFicha ? 'Suscripción Necesaria' : 'Límite Semanal Alcanzado'}</span>
+              <span>Suscripción Requerida para Acciones</span>
             </div>
 
             <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug">
               {isFicha
                 ? 'Ficha Oficial de Entrenador Reservada a Suscriptores'
-                : 'Límite del Modo Invitado Alcanzado'}
+                : 'Suscripción Necesaria para Crear y Guardar'}
             </h3>
 
             <p className="text-slate-300 text-xs leading-normal max-w-xs mx-auto">
               {isFicha
-                ? 'La Ficha de Entrenador está reservada para suscriptores. Elige tu plan para desbloquear tu perfil completo y todas las funciones.'
-                : 'En Modo Invitado dispones de 100 créditos semanales en cada apartado. ¡Hazte suscriptor para obtener 500 o 1.000 créditos semanales por apartado!'}
+                ? 'La Ficha de Entrenador está reservada para suscriptores. Elige tu plan para activar tu licencia de entrenador y todas las funciones.'
+                : 'En Modo Invitado puedes explorar y consultar todos los apartados de la aplicación. Para ejecutar acciones (crear entrenamientos, guardar jugadas, añadir jugadores o consultar a la IA), activa tu suscripción.'}
             </p>
           </div>
 

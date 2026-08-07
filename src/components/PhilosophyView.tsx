@@ -93,6 +93,12 @@ export const PhilosophyView: React.FC<PhilosophyViewProps> = ({
 
   const handleTestAi = async () => {
     if (!testQuestion.trim() || isTesting) return;
+
+    if (!consumeTrialAction(userProfile, 'philosophy')) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
+
     setIsTesting(true);
     setTestReply(null);
 

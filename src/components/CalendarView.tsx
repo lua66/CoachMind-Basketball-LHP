@@ -99,6 +99,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return true;
   });
 
+  const handleOpenAddModal = (type: 'friendly' | 'match' | 'training') => {
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
+    setEventType(type);
+    if (type === 'friendly') setLeg('pretemporada');
+    setIsAddModalOpen(true);
+  };
+
   const handleToggleAbsentPlayer = (playerName: string) => {
     if (selectedAbsentPlayers.includes(playerName)) {
       setSelectedAbsentPlayers(selectedAbsentPlayers.filter((p) => p !== playerName));
@@ -191,11 +201,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => {
-              setEventType('friendly');
-              setLeg('pretemporada');
-              setIsAddModalOpen(true);
-            }}
+            onClick={() => handleOpenAddModal('friendly')}
             className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Handshake className="w-5 h-5 text-purple-200" />
@@ -203,10 +209,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </button>
 
           <button
-            onClick={() => {
-              setEventType('match');
-              setIsAddModalOpen(true);
-            }}
+            onClick={() => handleOpenAddModal('match')}
             className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-5 h-5" />

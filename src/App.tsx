@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Dumbbell } from 'lucide-react';
+import { Menu, Dumbbell, MessageSquare } from 'lucide-react';
 import { ViewMode, SavedTraining, Player, MatchRecord, UserProfile, CalendarEvent, CoachPhilosophy } from './types';
 
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
+import { CoachView } from './components/CoachView';
 import { CalendarView } from './components/CalendarView';
 import { PhilosophyView } from './components/PhilosophyView';
 import { TrainingsView } from './components/TrainingsView';
@@ -16,6 +17,8 @@ import { CoachAiView } from './components/CoachAiView';
 import { SettingsView } from './components/SettingsView';
 import { RegistrationModal } from './components/RegistrationModal';
 import { TrialLimitModal } from './components/TrialLimitModal';
+import { ExitLikeModal } from './components/ExitLikeModal';
+import { WhatsAppInterviewModal } from './components/WhatsAppInterviewModal';
 import { consumeTrialAction } from './utils/trialManager';
 import { auth, onAuthStateChanged, signOut, User } from './lib/firebase';
 import {
@@ -35,7 +38,33 @@ export default function App() {
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [trialModalMode, setTrialModalMode] = useState<'general_action' | 'ficha_entrenador'>('general_action');
+  const [isExitLikeModalOpen, setIsExitLikeModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [authUser, setAuthUser] = useState<User | null>(null);
+
+  // Exit-Intent Mouse Listener ("no te vayas sin dejar tu like")
+  useEffect(() => {
+    const handleMouseLeave = (e: MouseEvent) => {
+      // Trigger strictly when the cursor leaves the document viewport (top or bottom edge)
+      const isLeavingTop = e.clientY <= 0;
+      const isLeavingBottom = e.clientY >= window.innerHeight;
+      const isLeavingLeftOrRight = e.clientX <= 0 || e.clientX >= window.innerWidth;
+
+      if (!e.relatedTarget && (isLeavingTop || isLeavingBottom || isLeavingLeftOrRight)) {
+        const hasShownInSession = sessionStorage.getItem('coachmind_exit_like_shown');
+        if (!hasShownInSession) {
+          setIsExitLikeModalOpen(true);
+          sessionStorage.setItem('coachmind_exit_like_shown', 'true');
+        }
+      }
+    };
+
+    document.documentElement.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      document.documentElement.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
 
   // Auto cleanup on initial publication launch & Clean Shareable URL Handler (?clean=true or ?register=true)
   useEffect(() => {
@@ -181,7 +210,7 @@ export default function App() {
 
   const handleOpenTrialModal = (mode: 'general_action' | 'ficha_entrenador' = 'general_action') => {
     setTrialModalMode(mode);
-    setIsTrialModalOpen(true);
+    setIsRegistrationModalOpen(true);
   };
 
   const handleCheckAndRunTrialAction = (actionCallback: () => void) => {
@@ -197,6 +226,73 @@ export default function App() {
     const local = localStorage.getItem('coachmind_user_profile');
     return local ? JSON.parse(local) : null;
   });
+
+  // Require registration form when clicking ANY button if user is not registered
+  useEffect(() => {
+    if (userProfile) return;
+
+    const handleGlobalButtonClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Allow clicks inside Registration Modal or Exit Like Modal
+      const insideModal = target.closest('[data-registration-modal="true"], [data-exit-like-modal="true"]');
+      if (insideModal) return;
+
+      // Allow clicks inside Sidebar or elements explicitly marked with data-allow-nav="true" or data-sidebar="true"
+      const insideSidebar = target.closest('aside, [data-sidebar="true"], [data-allow-nav="true"]');
+      if (insideSidebar) return;
+
+      // Check if target is a button, link, or interactive element
+      const buttonTarget = target.closest('button, [role="button"], a, input[type="button"], input[type="submit"]');
+      if (!buttonTarget) return;
+
+      // Extract text content and attributes to identify Back / Return / Dashboard navigation
+      const text = (buttonTarget.textContent || '').toLowerCase().trim();
+      const ariaLabel = (buttonTarget.getAttribute('aria-label') || '').toLowerCase();
+      const title = (buttonTarget.getAttribute('title') || '').toLowerCase();
+
+      const isNavOrBack =
+        text.includes('dashboard') ||
+        text.includes('inicio') ||
+        text.includes('volver') ||
+        text.includes('atrás') ||
+        text.includes('atras') ||
+        text.includes('regresar') ||
+        text.includes('panel') ||
+        text.includes('coachmind') ||
+        ariaLabel.includes('dashboard') ||
+        ariaLabel.includes('volver') ||
+        ariaLabel.includes('cerrar') ||
+        title.includes('dashboard') ||
+        title.includes('volver') ||
+        buttonTarget.getAttribute('data-allow-nav') === 'true';
+
+      // If it's a navigation or back button (like returning to Dashboard), ALLOW it!
+      if (isNavOrBack) {
+        if (
+          text.includes('dashboard') ||
+          text.includes('inicio') ||
+          text.includes('coachmind') ||
+          text.includes('volver al panel') ||
+          ariaLabel.includes('dashboard')
+        ) {
+          setCurrentView('dashboard');
+        }
+        return; // Do NOT block or open modal
+      }
+
+      // Intercept functional action buttons inside views (e.g. creating, editing, AI tools) to request registration
+      e.preventDefault();
+      e.stopPropagation();
+      setIsRegistrationModalOpen(true);
+    };
+
+    window.addEventListener('click', handleGlobalButtonClick, true);
+    return () => {
+      window.removeEventListener('click', handleGlobalButtonClick, true);
+    };
+  }, [userProfile]);
 
   // Calendar Events State
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
@@ -331,7 +427,9 @@ export default function App() {
   };
 
   const handleAddCalendarEvent = (newEvent: CalendarEvent) => {
-    setCalendarEvents((prev) => [newEvent, ...prev]);
+    handleCheckAndRunTrialAction(() => {
+      setCalendarEvents((prev) => [newEvent, ...prev]);
+    });
   };
 
   const handleDeleteCalendarEvent = (id: string) => {
@@ -469,6 +567,7 @@ export default function App() {
         onMobileClose={() => setIsMobileMenuOpen(false)}
         userProfile={userProfile}
         onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
+        onOpenWhatsAppInterview={() => setIsWhatsAppModalOpen(true)}
         authUser={authUser}
         onSignOut={handleSignOut}
         onClearProfile={handleClearProfile}
@@ -485,6 +584,25 @@ export default function App() {
             calendarEvents={calendarEvents}
             coachPhilosophy={coachPhilosophy}
             onQuickAskAi={handleQuickAskAi}
+            userProfile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
+            onDeleteMatch={handleDeleteMatch}
+            onClearMatches={handleClearMatches}
+            onUpdateMatches={handleUpdateMatches}
+            onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
+            onOpenFichaLockModal={() => handleOpenTrialModal('ficha_entrenador')}
+            onClearProfile={handleClearProfile}
+          />
+        )}
+
+        {currentView === 'coach' && (
+          <CoachView
+            onNavigate={setCurrentView}
+            trainings={trainings}
+            players={players}
+            matches={matches}
+            calendarEvents={calendarEvents}
+            coachPhilosophy={coachPhilosophy}
             userProfile={userProfile}
             onUpdateProfile={handleUpdateProfile}
             onDeleteMatch={handleDeleteMatch}
@@ -522,6 +640,8 @@ export default function App() {
             trainings={trainings}
             onNavigate={setCurrentView}
             onDeleteTraining={handleDeleteTraining}
+            userProfile={userProfile}
+            onOpenTrialModal={handleOpenTrialModal}
           />
         )}
 
@@ -613,6 +733,16 @@ export default function App() {
         onClose={() => setIsTrialModalOpen(false)}
         onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
         mode={trialModalMode}
+      />
+
+      <ExitLikeModal
+        isOpen={isExitLikeModalOpen}
+        onClose={() => setIsExitLikeModalOpen(false)}
+        userProfile={userProfile}
+        onReviewSubmitted={() => {
+          // Trigger a custom event to notify components that reviews updated
+          window.dispatchEvent(new Event('coachmind_reviews_updated'));
+        }}
       />
     </div>
   );

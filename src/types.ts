@@ -17,7 +17,7 @@ export interface UserProfile {
   coachLevel?: 'Nivel 0' | 'Nivel 1' | 'Nivel 2' | 'Nivel Nacional' | 'Nivel Profesional' | string;
   titleFederation?: string;
   workFederation?: string;
-  subscriptionPlan?: 'monthly' | 'annual';
+  subscriptionPlan?: 'monthly' | 'annual' | 'free_unlimited' | string;
   paymentMethod?: 'card' | 'paypal' | 'none' | 'visa' | string;
   cardLast4?: string;
   subscriptionStatus?: 'active' | 'canceling_end_of_period' | 'cancelled' | 'trial';
@@ -27,6 +27,7 @@ export interface UserProfile {
 
 export type ViewMode =
   | 'dashboard'
+  | 'coach'
   | 'calendar'
   | 'philosophy'
   | 'trainings'

@@ -198,6 +198,10 @@ export const MatchAnalysisView: React.FC<MatchAnalysisViewProps> = ({
   };
 
   const openAddModal = () => {
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
     setRegisterMode('select');
     setOpponent('');
     setNotes('');

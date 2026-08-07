@@ -15,18 +15,22 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
-import { SavedTraining, TrainingSection, ViewMode } from '../types';
+import { SavedTraining, TrainingSection, ViewMode, UserProfile } from '../types';
 
 interface TrainingsViewProps {
   trainings: SavedTraining[];
   onNavigate: (view: ViewMode) => void;
   onDeleteTraining: (id: string) => void;
+  userProfile?: UserProfile | null;
+  onOpenTrialModal?: (mode?: 'general_action' | 'ficha_entrenador') => void;
 }
 
 export const TrainingsView: React.FC<TrainingsViewProps> = ({
   trainings,
   onNavigate,
   onDeleteTraining,
+  userProfile,
+  onOpenTrialModal,
 }) => {
   const [expandedSection, setExpandedSection] = useState<TrainingSection | null>(null);
   const [selectedTraining, setSelectedTraining] = useState<SavedTraining | null>(null);
@@ -89,8 +93,14 @@ export const TrainingsView: React.FC<TrainingsViewProps> = ({
         </div>
 
         <button
-          onClick={() => onNavigate('create-training')}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          onClick={() => {
+            if (!userProfile) {
+              if (onOpenTrialModal) onOpenTrialModal('general_action');
+              return;
+            }
+            onNavigate('create-training');
+          }}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo</span>
@@ -178,8 +188,14 @@ export const TrainingsView: React.FC<TrainingsViewProps> = ({
                               <span>Abrir</span>
                             </button>
                             <button
-                              onClick={() => onDeleteTraining(item.id)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              onClick={() => {
+                                if (!userProfile) {
+                                  if (onOpenTrialModal) onOpenTrialModal('general_action');
+                                  return;
+                                }
+                                onDeleteTraining(item.id);
+                              }}
+                              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                               title="Eliminar entrenamiento"
                             >
                               <Trash2 className="w-4 h-4" />

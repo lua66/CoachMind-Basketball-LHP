@@ -34,6 +34,7 @@ interface RegistrationModalProps {
   onRegister: (profile: UserProfile) => void;
   titleNotice?: string;
   userProfile?: UserProfile | null;
+  onOpenWhatsAppInterview?: () => void;
 }
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
@@ -42,6 +43,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onRegister,
   titleNotice,
   userProfile,
+  onOpenWhatsAppInterview,
 }) => {
   // View Mode: 'register' or 'login'
   const [authMode, setAuthMode] = useState<'register' | 'login'>('register');
@@ -256,7 +258,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
+    <div data-registration-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700/90 rounded-3xl w-full max-w-2xl text-white shadow-2xl overflow-hidden my-auto relative">
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 p-5 sm:p-6 text-white relative overflow-hidden">
@@ -677,22 +679,30 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div className="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-4 sm:p-5 rounded-2xl border border-emerald-500/50 text-left space-y-3 relative overflow-hidden">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-emerald-400 shrink-0" />
-                <h5 className="text-sm font-black text-white">¿Quieres Asesoría Táctica Individualizada 1 a 1 por WhatsApp?</h5>
+                <h5 className="text-sm font-black text-white">¿Quieres Asesoría Táctica o Entrevista 1 a 1 por WhatsApp?</h5>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Si deseas un análisis táctico personalizado para tu equipo, estudio de rivales o preparación a medida de partidos clave, puedes solicitar una sesión privada por WhatsApp con nuestro Entrenador Experto.
+                Completa el formulario directo de entrevista (nombre, país, años de experiencia y tema físico/táctico/técnico) para agendar tu sesión privada con nuestro Entrenador Experto.
               </p>
-              <a
-                href={`https://wa.me/34608180231?text=${encodeURIComponent(
-                  `Hola, soy el entrenador ${createdProfile.firstName} ${createdProfile.lastName} del club ${createdProfile.club}. Me gustaría solicitar información sobre la asesoría táctica individualizada 1 a 1 por WhatsApp.`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer no-underline"
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenWhatsAppInterview) {
+                    onOpenWhatsAppInterview();
+                  } else {
+                    window.open(
+                      `https://wa.me/34608180231?text=${encodeURIComponent(
+                        `Hola, soy el entrenador ${createdProfile.firstName} ${createdProfile.lastName} de ${createdProfile.country || 'España'}. Me gustaría solicitar información sobre la entrevista / asesoría por WhatsApp.`
+                      )}`,
+                      '_blank'
+                    );
+                  }
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
               >
                 <Smartphone className="w-4 h-4 text-slate-950" />
-                <span>Solicitar Asesoría Individualizada por WhatsApp</span>
-              </a>
+                <span>Rellenar Formulario y Abrir WhatsApp</span>
+              </button>
             </div>
 
             <div className="pt-2">

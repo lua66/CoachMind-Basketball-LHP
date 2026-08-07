@@ -111,6 +111,11 @@ export const CreateTrainingView: React.FC<CreateTrainingViewProps> = ({
   const handleSave = () => {
     if (!generatedPlan) return;
 
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
+
     const newTraining: SavedTraining = {
       id: `tr-${Date.now()}`,
       title: title.trim() || objective.slice(0, 30),

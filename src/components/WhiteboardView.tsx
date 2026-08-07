@@ -935,6 +935,10 @@ export const WhiteboardView: React.FC<WhiteboardViewProps> = ({
   };
 
   const handleOpenSaveModal = () => {
+    if (!userProfile) {
+      if (onOpenTrialModal) onOpenTrialModal('general_action');
+      return;
+    }
     setTacticName(`Táctica ${savedPlays.length + 1}`);
     const todayStr = new Date().toISOString().split('T')[0];
     setTacticDate(todayStr);

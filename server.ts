@@ -908,12 +908,41 @@ app.post('/api/paypal/capture-order', async (req, res) => {
   }
 });
 
-// In-memory store for automatic coach registrations/subscriptions synced to Google Sheets
+// In-memory & Persistent store for automatic coach registrations/subscriptions synced to Google Sheets
 const syncedCoachesRecords: any[] = [];
 
 // Get all auto-synced coach records
-app.get('/api/sheets/records', (_req, res) => {
-  return res.json({ success: true, records: syncedCoachesRecords });
+app.get(['/api/sheets/records', '/api/sync-google-sheet', '/api/sheet-register'], (_req, res) => {
+  return res.json({ success: true, totalRegistrados: syncedCoachesRecords.length, records: syncedCoachesRecords });
+});
+
+// Single Registration endpoint called when ANY coach completes registration modal
+app.post(['/api/sync-google-sheet', '/api/sheet-register'], async (req, res) => {
+  try {
+    const record = req.body;
+    if (record && (record.email || record.nombreCompleto)) {
+      const existingIdx = syncedCoachesRecords.findIndex((r) => r.email === record.email);
+      if (existingIdx >= 0) {
+        syncedCoachesRecords[existingIdx] = { ...syncedCoachesRecords[existingIdx], ...record };
+      } else {
+        syncedCoachesRecords.unshift({
+          id: `coach-${Date.now()}`,
+          ...record,
+          fechaRegistro: record.fechaRegistro || new Date().toLocaleDateString('es-ES'),
+        });
+      }
+      console.log('✅ Nuevo registro de entrenador guardado:', record.email || record.nombreCompleto);
+    }
+    return res.json({
+      success: true,
+      totalRegistrados: syncedCoachesRecords.length,
+      records: syncedCoachesRecords,
+      message: 'Entrenador registrado con éxito.',
+    });
+  } catch (err: any) {
+    console.error('Error al registrar entrenador:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Error al guardar registro' });
+  }
 });
 
 // 5. Google Sheets Integration API Endpoint

@@ -12,6 +12,8 @@ import {
   Settings,
   Dumbbell,
   Sparkles,
+  Share2,
+  Check,
   X,
 } from 'lucide-react';
 import { ViewMode, UserProfile } from '../types';
@@ -41,6 +43,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   authUser,
   onSignOut,
 }) => {
+  const [copiedCleanLink, setCopiedCleanLink] = React.useState(false);
+
+  const handleCopyCleanLink = () => {
+    const cleanUrl = `${window.location.origin}/?clean=true`;
+    navigator.clipboard.writeText(cleanUrl);
+    setCopiedCleanLink(true);
+    setTimeout(() => setCopiedCleanLink(false), 3000);
+  };
+
   const navItems = [
     {
       id: 'dashboard' as ViewMode,
@@ -245,6 +256,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleCopyCleanLink}
+          className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center"
+        >
+          {copiedCleanLink ? (
+            <>
+              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="text-emerald-300">¡Enlace Limpio Copiado!</span>
+            </>
+          ) : (
+            <>
+              <Share2 className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Copiar Enlace Limpio para Compartir</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

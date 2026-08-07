@@ -37,10 +37,20 @@ export default function App() {
   const [trialModalMode, setTrialModalMode] = useState<'general_action' | 'ficha_entrenador'>('general_action');
   const [authUser, setAuthUser] = useState<User | null>(null);
 
-  // Auto cleanup on initial publication launch (Complete Wipe of Personal Data)
+  // Auto cleanup on initial publication launch & Clean Shareable URL Handler (?clean=true or ?register=true)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isCleanRequested = params.has('clean') || params.has('guest') || params.has('register') || params.has('new');
+
+    if (isCleanRequested) {
+      localStorage.removeItem('coachmind_user_profile');
+      setUserProfile(null);
+      setIsRegistrationModalOpen(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const hasCleaned = localStorage.getItem('coachmind_cleaned_launch_v9');
-    if (!hasCleaned) {
+    if (!hasCleaned && !isCleanRequested) {
       localStorage.removeItem('coachmind_user_profile');
       localStorage.removeItem('coachmind_calendar_events');
       localStorage.removeItem('coachmind_philosophy');

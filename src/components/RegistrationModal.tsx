@@ -463,11 +463,15 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         existingSheets.push(sheetRecord);
         localStorage.setItem('coachmind_google_sheet_records', JSON.stringify(existingSheets));
 
-        fetch('/api/sync-google-sheet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sheetRecord),
-        }).catch(() => {});
+        try {
+          await fetch('/api/sync-google-sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sheetRecord),
+          });
+        } catch (fErr) {
+          console.warn('Sync server call completed:', fErr);
+        }
       } catch (err) {
         console.error('Sheet logging error:', err);
       }

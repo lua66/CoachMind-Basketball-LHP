@@ -83,6 +83,7 @@ interface DashboardViewProps {
   onUpdateMatches?: (newMatches: MatchRecord[]) => void;
   onOpenRegisterModal?: () => void;
   onOpenFichaLockModal?: () => void;
+  onClearProfile?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -99,6 +100,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onUpdateMatches,
   onOpenRegisterModal,
   onOpenFichaLockModal,
+  onClearProfile,
 }) => {
   // Initialize form state from userProfile or default empty state
   const [firstName, setFirstName] = useState(userProfile?.firstName || '');
@@ -448,19 +450,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {userProfile ? (
-              userProfile.subscriptionStatus === 'canceling_end_of_period' ? (
-                <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span>Baja Programada</span>
-                </span>
-              ) : (
-                <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center gap-1.5">
-                  <BadgeCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Suscripción Activa</span>
-                </span>
-              )
+              <>
+                {userProfile.subscriptionStatus === 'canceling_end_of_period' ? (
+                  <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                    <span>Baja Programada</span>
+                  </span>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center gap-1.5">
+                    <BadgeCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Suscripción Activa</span>
+                  </span>
+                )}
+                {onClearProfile && (
+                  <button
+                    type="button"
+                    onClick={onClearProfile}
+                    className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer"
+                    title="Cerrar esta sesión y limpiar ficha de este navegador"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <span>Cerrar Sesión / Limpiar Ficha</span>
+                  </button>
+                )}
+              </>
             ) : (
               <button
                 type="button"

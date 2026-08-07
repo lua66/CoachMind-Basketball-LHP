@@ -295,6 +295,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               >
                 Cambiar Plan o Método
               </button>
+              {onUpdateProfile && (
+                <button
+                  onClick={() => {
+                    if (confirm('¿Deseas cerrar la sesión y borrar la ficha guardada en este navegador?')) {
+                      onUpdateProfile(null);
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-extrabold text-xs border border-red-500/30 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5 text-red-400" />
+                  <span>Cerrar Sesión / Limpiar Ficha</span>
+                </button>
+              )}
             </div>
           </div>
 

@@ -408,6 +408,11 @@ export default function App() {
     });
   };
 
+  const handleClearProfile = () => {
+    localStorage.removeItem('coachmind_user_profile');
+    setUserProfile(null);
+  };
+
   const handleClearAllData = () => {
     localStorage.removeItem('coachmind_trainings');
     localStorage.removeItem('coachmind_players');
@@ -466,6 +471,7 @@ export default function App() {
         onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
         authUser={authUser}
         onSignOut={handleSignOut}
+        onClearProfile={handleClearProfile}
       />
 
       {/* Main Content Workspace Area */}
@@ -486,6 +492,7 @@ export default function App() {
             onUpdateMatches={handleUpdateMatches}
             onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
             onOpenFichaLockModal={() => handleOpenTrialModal('ficha_entrenador')}
+            onClearProfile={handleClearProfile}
           />
         )}
 

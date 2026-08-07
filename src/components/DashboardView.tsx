@@ -33,6 +33,8 @@ import {
   Trash2,
   Star,
   Quote,
+  MessageSquare,
+  Smartphone,
   MessageSquareHeart,
   ChevronDown,
   ChevronUp,
@@ -445,25 +447,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </h1>
             <p className="text-slate-300 text-sm max-w-xl">
               {userProfile
-                ? 'Aquí puedes consultar y editar tu carnet de entrenador oficial, así como visualizar tu balance de victorias y el grado de aprovechamiento de CoachMind.'
-                : 'Explora la pizarra táctica, la gestión de entrenamientos y las estadísticas. Suscríbete para activar tu carnet oficial de entrenador y guardar tu ficha técnica.'}
+                ? 'Acceso total y gratuito a CoachMind. Revisa y edita tu carnet de entrenador oficial, gestiona tu plantilla y diseña tus estrategias.'
+                : 'Explora la pizarra táctica, los entrenamientos y las estadísticas de forma 100% gratuita. Registra tus datos para activar tu carnet oficial de entrenador.'}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {userProfile ? (
               <>
-                {userProfile.subscriptionStatus === 'canceling_end_of_period' ? (
-                  <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-amber-400" />
-                    <span>Baja Programada</span>
-                  </span>
-                ) : (
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center gap-1.5">
-                    <BadgeCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Suscripción Activa</span>
-                  </span>
-                )}
+                <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center gap-1.5">
+                  <BadgeCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Licencia Gratuita Verificada</span>
+                </span>
                 {onClearProfile && (
                   <button
                     type="button"
@@ -482,8 +477,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 onClick={onOpenRegisterModal}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
               >
-                <Lock className="w-4 h-4" />
-                <span>Sin Suscripción • Suscribirse (5€/mes)</span>
+                <Sparkles className="w-4 h-4 text-amber-200" />
+                <span>⭐ Registrarme Gratis (Licencia Entrenador)</span>
               </button>
             )}
           </div>
@@ -491,6 +486,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Background decorative basketball lines */}
         <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full border-[16px] border-slate-800/40 pointer-events-none" />
+      </div>
+
+      {/* WHATSAPP 1-ON-1 CONSULTING OFFER BANNER */}
+      <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 rounded-2xl border border-emerald-500/40 p-5 sm:p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1.5 max-w-xl">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <MessageSquare className="w-3 h-3 text-emerald-400" />
+              Servicio Personalizado Pro
+            </span>
+            <span className="text-[11px] font-bold text-amber-300">Atención Directa por WhatsApp</span>
+          </div>
+          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+            ¿Quieres Asesoría Táctica Individualizada para tu Equipo? 🏀
+          </h3>
+          <p className="text-xs text-slate-200 leading-relaxed">
+            Obtén un análisis táctico 1 a 1 con nuestro Entrenador Experto: preparación personalizada de partidos clave, estudio detallado de rivales y diseño de sistemas a medida para tu plantilla.
+          </p>
+        </div>
+        <a
+          href={`https://wa.me/34608180231?text=${encodeURIComponent(
+            `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2.5 shadow-lg shadow-emerald-500/30 hover:scale-105 transition-all cursor-pointer shrink-0 text-center no-underline"
+        >
+          <Smartphone className="w-5 h-5 text-slate-950" />
+          <span>Contactar por WhatsApp (Asesoría 1 a 1)</span>
+        </a>
       </div>
 
       {saveSuccess && (

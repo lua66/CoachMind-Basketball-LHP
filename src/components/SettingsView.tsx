@@ -262,142 +262,94 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* Subscription & Payment Card if User Registered */}
-      {userProfile ? (
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-amber-500/30 shadow-xl space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
-                <Sparkles className="w-5 h-5 text-amber-300" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-black tracking-wider text-amber-400 block">
-                  {subInfo.isPaid
-                    ? userProfile.subscriptionStatus === 'canceling_end_of_period'
-                      ? `Baja Programada (${subInfo.daysRemaining} días restantes)`
-                      : 'Suscripción de Pago Activa'
-                    : 'Modo Invitado / Prueba Gratis'}
-                </span>
-                <h4 className="text-base font-extrabold text-white">
-                  {subInfo.isPaid
-                    ? userProfile.subscriptionPlan === 'annual'
-                      ? 'Plan Suscriptor Anual (60 € / año - 360 días)'
-                      : 'Plan Suscriptor Mensual (5 € / mes - 28 días)'
-                    : 'Registro Invitado (Sin Pago)'}
-                </h4>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={onOpenRegisterModal}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs border border-amber-500/30 transition-all cursor-pointer"
-              >
-                Cambiar Plan o Método
-              </button>
-              {onUpdateProfile && (
-                <button
-                  onClick={() => {
-                    if (confirm('¿Deseas cerrar la sesión y borrar la ficha guardada en este navegador?')) {
-                      onUpdateProfile(null);
-                    }
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-extrabold text-xs border border-red-500/30 transition-all cursor-pointer flex items-center gap-1"
-                >
-                  <X className="w-3.5 h-3.5 text-red-400" />
-                  <span>Cerrar Sesión / Limpiar Ficha</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800 text-xs">
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Créditos por Apartado</span>
-              <span className="text-amber-300 font-black text-sm mt-0.5 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                {userProfile.subscriptionPlan === 'annual'
-                  ? '1.000 / semana'
-                  : userProfile.subscriptionPlan === 'monthly'
-                  ? '500 / semana'
-                  : '100 / semana'}
-              </span>
-            </div>
-
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Método de Pago</span>
-              <span className="text-slate-200 font-bold mt-0.5 block">
-                {subInfo.isPaid
-                  ? userProfile.paymentMethod === 'paypal'
-                    ? 'PayPal (Pago Cifrado)'
-                    : `Tarjeta Crédito/Débito (•••• ${userProfile.cardLast4 || '4242'})`
-                  : 'Sin Pago (Modo Invitado)'}
-              </span>
-            </div>
-
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Estado de Cuenta</span>
-              <span className={`font-bold mt-0.5 flex items-center gap-1 ${
-                userProfile.subscriptionStatus === 'canceling_end_of_period'
-                  ? 'text-amber-400'
-                  : userProfile.subscriptionStatus === 'cancelled'
-                  ? 'text-rose-400'
-                  : 'text-emerald-400'
-              }`}>
-                {userProfile.subscriptionStatus === 'canceling_end_of_period' ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-                    Baja {subInfo.expirationDateStr}
-                  </>
-                ) : userProfile.subscriptionStatus === 'cancelled' ? (
-                  <>
-                    <X className="w-3.5 h-3.5 text-rose-400" />
-                    Cancelado
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    {subInfo.isPaid ? 'Suscripción Activa' : 'Invitado Activo'}
-                  </>
-                )}
-              </span>
-            </div>
-
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Fecha de Alta</span>
-              <span className="text-slate-200 font-bold mt-0.5 block">
-                {userProfile.registeredAt}
-              </span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 rounded-2xl border border-slate-700 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* License & WhatsApp Consultation Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-amber-500/30 shadow-xl space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
-              <Lock className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0">
+              <ShieldCheck className="w-5 h-5 text-emerald-300" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-black tracking-wider text-amber-400 block">
-                Modo Invitado Activo
+              <span className="text-[10px] uppercase font-black tracking-wider text-emerald-400 block">
+                Plataforma 100% Gratuita e Ilimitada
               </span>
-              <h4 className="text-sm font-extrabold text-white">
-                Dispones de 100 créditos semanales en cada apartado
+              <h4 className="text-base font-extrabold text-white">
+                {userProfile
+                  ? `Licencia de Entrenador: ${userProfile.firstName} ${userProfile.lastName}`
+                  : 'Modo Libre / Acceso Completo Gratuito'}
               </h4>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Hazte suscriptor para obtener 500 o 1.000 créditos semanales por apartado y desbloquear tu Ficha de Entrenador.
-              </p>
             </div>
           </div>
 
-          <button
-            onClick={onOpenRegisterModal}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-xs shadow-lg shadow-orange-500/20 shrink-0 cursor-pointer"
-          >
-            Suscribirse desde 5 €/mes
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={onOpenRegisterModal}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md"
+            >
+              {userProfile ? 'Ver / Editar Ficha' : 'Obtener Licencia Gratuita'}
+            </button>
+            {userProfile && onUpdateProfile && (
+              <button
+                onClick={() => {
+                  if (confirm('¿Deseas cerrar la sesión y borrar la ficha guardada en este navegador?')) {
+                    onUpdateProfile(null);
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-extrabold text-xs border border-red-500/30 transition-all cursor-pointer flex items-center gap-1"
+              >
+                <X className="w-3.5 h-3.5 text-red-400" />
+                <span>Cerrar Sesión / Limpiar Ficha</span>
+              </button>
+            )}
+          </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800 text-xs">
+          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Uso de Herramientas</span>
+            <span className="text-emerald-300 font-black text-sm mt-0.5 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              Ilimitado Sin Restricciones
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Estado de Licencia</span>
+            <span className="text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              {userProfile ? 'Licencia Verificada' : 'Acceso Libre'}
+            </span>
+          </div>
+
+          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            <span className="text-slate-400 block text-[10px] uppercase font-bold">Asesoría Táctica 1 a 1</span>
+            <span className="text-amber-300 font-bold mt-0.5 block">
+              Disponible por WhatsApp
+            </span>
+          </div>
+        </div>
+
+        {/* Banner de Asesoría por WhatsApp */}
+        <div className="mt-3 p-4 rounded-xl bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div>
+            <span className="font-extrabold text-white text-sm block">¿Deseas Asesoría Individualizada para tu Equipo?</span>
+            <p className="text-slate-300 text-[11px] mt-0.5">
+              Análisis táctico 1 a 1, estudio de rivales y preparación de partidos clave con nuestro Entrenador Experto.
+            </p>
+          </div>
+          <a
+            href={`https://wa.me/34608180231?text=${encodeURIComponent(
+              `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-md shrink-0 no-underline"
+          >
+            <Smartphone className="w-4 h-4 text-slate-950" />
+            <span>Pedir Asesoría por WhatsApp</span>
+          </a>
+        </div>
+      </div>
 
       {/* Profile Card / Form */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">

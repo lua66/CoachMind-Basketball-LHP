@@ -15,6 +15,7 @@ import {
   Share2,
   Check,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import { ViewMode, UserProfile } from '../types';
 
@@ -250,12 +251,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={onOpenRegisterModal}
                   className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-[11px] font-black transition-all cursor-pointer shadow-md shadow-orange-500/20 text-center"
                 >
-                  Iniciar Sesión / Registro Pro
+                  Iniciar Sesión / Registro Gratis
                 </button>
               </div>
             )}
           </div>
         )}
+
+        <a
+          href={`https://wa.me/34608180231?text=${encodeURIComponent(
+            `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2.5 w-full py-2 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-black border border-emerald-500/40 flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center no-underline"
+        >
+          <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span>Asesoría 1 a 1 (WhatsApp)</span>
+        </a>
 
         <button
           type="button"

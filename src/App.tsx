@@ -567,7 +567,6 @@ export default function App() {
         onMobileClose={() => setIsMobileMenuOpen(false)}
         userProfile={userProfile}
         onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
-        onOpenWhatsAppInterview={() => setIsWhatsAppModalOpen(true)}
         authUser={authUser}
         onSignOut={handleSignOut}
         onClearProfile={handleClearProfile}
@@ -714,6 +713,7 @@ export default function App() {
             onClearAllData={handleClearAllData}
             onOpenRegisterModal={() => setIsRegistrationModalOpen(true)}
             onOpenFichaLockModal={() => handleOpenTrialModal('ficha_entrenador')}
+            onOpenWhatsAppInterview={() => setIsWhatsAppModalOpen(true)}
           />
         )}
       </main>
@@ -743,6 +743,12 @@ export default function App() {
           // Trigger a custom event to notify components that reviews updated
           window.dispatchEvent(new Event('coachmind_reviews_updated'));
         }}
+      />
+
+      <WhatsAppInterviewModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        userProfile={userProfile}
       />
     </div>
   );

@@ -675,36 +675,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               </div>
             </div>
 
-            {/* WhatsApp Consulting Offer Banner */}
-            <div className="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-4 sm:p-5 rounded-2xl border border-emerald-500/50 text-left space-y-3 relative overflow-hidden">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-400 shrink-0" />
-                <h5 className="text-sm font-black text-white">¿Quieres Asesoría Táctica o Entrevista 1 a 1 por WhatsApp?</h5>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Completa el formulario directo de entrevista (nombre, país, años de experiencia y tema físico/táctico/técnico) para agendar tu sesión privada con nuestro Entrenador Experto.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (onOpenWhatsAppInterview) {
-                    onOpenWhatsAppInterview();
-                  } else {
-                    window.open(
-                      `https://wa.me/34608180231?text=${encodeURIComponent(
-                        `Hola, soy el entrenador ${createdProfile.firstName} ${createdProfile.lastName} de ${createdProfile.country || 'España'}. Me gustaría solicitar información sobre la entrevista / asesoría por WhatsApp.`
-                      )}`,
-                      '_blank'
-                    );
-                  }
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-              >
-                <Smartphone className="w-4 h-4 text-slate-950" />
-                <span>Rellenar Formulario y Abrir WhatsApp</span>
-              </button>
-            </div>
-
             <div className="pt-2">
               <button
                 type="button"

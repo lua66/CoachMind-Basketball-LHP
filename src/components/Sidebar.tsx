@@ -210,17 +210,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer Account / Modo Invitado Panel */}
       <div className="p-3.5 m-3 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-2">
-        {onOpenWhatsAppInterview && (
-          <button
-            type="button"
-            onClick={onOpenWhatsAppInterview}
-            className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all cursor-pointer shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 text-center"
-          >
-            <MessageSquare className="w-4 h-4 text-emerald-300" />
-            <span className="truncate">Entrevista por WhatsApp</span>
-          </button>
-        )}
-
         {authUser || userProfile ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">

@@ -148,37 +148,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full border-[16px] border-slate-800/40 pointer-events-none" />
       </div>
 
-      {/* TARJETA 2: BANNER DE ASESORÍA POR WHATSAPP 1-ON-1 */}
-      <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 rounded-2xl border border-emerald-500/40 p-5 sm:p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1.5 max-w-xl">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-              <MessageSquare className="w-3 h-3 text-emerald-400" />
-              Servicio Personalizado
-            </span>
-            <span className="text-[11px] font-bold text-amber-300">Atención Directa por WhatsApp</span>
-          </div>
-          <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-            ¿Quieres Asesoría Táctica Individualizada para tu Equipo? 🏀
-          </h3>
-          <p className="text-xs text-slate-200 leading-relaxed">
-            Obtén un análisis táctico 1 a 1 con nuestro Entrenador Experto: preparación personalizada de partidos clave, estudio detallado de rivales y diseño de sistemas a medida para tu plantilla.
-          </p>
-        </div>
-        <a
-          href={`https://wa.me/34608180231?text=${encodeURIComponent(
-            `Hola! Soy ${userProfile ? `${userProfile.firstName} (${userProfile.club || 'Entrenador'})` : 'entrenador de baloncesto'}. Me gustaría información sobre la Asesoría Táctica Individualizada 1 a 1 por WhatsApp.`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2.5 shadow-lg shadow-emerald-500/30 hover:scale-105 transition-all cursor-pointer shrink-0 text-center no-underline"
-        >
-          <Smartphone className="w-5 h-5 text-slate-950" />
-          <span>Contactar por WhatsApp</span>
-        </a>
-      </div>
-
-      {/* TARJETA 3: ACCESOS RÁPIDOS Y RESUMEN TÁCTICO DE OPERACIONES */}
+      {/* ACCESOS RÁPIDOS Y RESUMEN TÁCTICO DE OPERACIONES */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>

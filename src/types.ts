@@ -34,6 +34,7 @@ export type ViewMode =
   | 'create-training'
   | 'stats'
   | 'match-analysis'
+  | 'match-management'
   | 'whiteboard'
   | 'players'
   | 'coach-ai'

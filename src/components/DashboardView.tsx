@@ -227,6 +227,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
 
+        {/* BANNER DESTACADO PARA EL NUEVO MÓDULO GESTIÓN DEL PARTIDO */}
+        <div
+          onClick={() => onNavigate('match-management')}
+          className="p-6 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-900 to-indigo-950 border border-teal-500/40 text-white hover:border-teal-400 transition-all cursor-pointer shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group"
+        >
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-black uppercase tracking-wider">
+              <Brain className="w-3.5 h-3.5 text-teal-400" />
+              ¡Novedad Metodológica!
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              🧠 Gestión del Partido
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Aprende a leer el partido, domina la Ciencia de las Sustituciones, evita el Síndrome del Falso Ganador y entrena con el Simulador Interactivo de Decisiones en tiempo real.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-500 text-slate-950 font-black text-xs sm:text-sm group-hover:bg-teal-400 transition-all shrink-0">
+            <span>Entrar al Simulador</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+
         {/* Accesos rápidos en cuadrícula */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <div

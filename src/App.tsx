@@ -11,6 +11,7 @@ import { TrainingsView } from './components/TrainingsView';
 import { CreateTrainingView } from './components/CreateTrainingView';
 import { StatsView } from './components/StatsView';
 import { MatchAnalysisView } from './components/MatchAnalysisView';
+import { MatchManagementView } from './components/MatchManagementView';
 import { WhiteboardView } from './components/WhiteboardView';
 import { PlayersView } from './components/PlayersView';
 import { CoachAiView } from './components/CoachAiView';
@@ -675,6 +676,10 @@ export default function App() {
             onNavigate={setCurrentView}
             onOpenTrialModal={handleOpenTrialModal}
           />
+        )}
+
+        {currentView === 'match-management' && (
+          <MatchManagementView />
         )}
 
         {currentView === 'whiteboard' && (

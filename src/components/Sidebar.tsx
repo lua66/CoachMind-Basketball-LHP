@@ -17,6 +17,7 @@ import {
   X,
   MessageSquare,
   Award,
+  Activity,
 } from 'lucide-react';
 import { ViewMode, UserProfile } from '../types';
 
@@ -100,6 +101,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'match-analysis' as ViewMode,
       label: 'Análisis de Partido',
       icon: Video,
+    },
+    {
+      id: 'match-management' as ViewMode,
+      label: 'Gestión del Partido',
+      icon: Activity,
+      highlight: true,
     },
     {
       id: 'whiteboard' as ViewMode,

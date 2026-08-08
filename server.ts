@@ -910,35 +910,109 @@ app.post('/api/paypal/capture-order', async (req, res) => {
 
 // In-memory & Persistent store for automatic coach registrations/subscriptions synced to Google Sheets
 const syncedCoachesRecords: any[] = [];
+let configuredWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbyNhR0oVidSEd8llHmebFMBq7DNC2MqUWZWoDPz17mrHgJ_KZJ8PkRYkh5yRsWr-MQi/exec';
+
+// Helper function to send records directly to Google Sheets Webhook Script
+async function triggerGoogleSheetsWebhook(coachRecord: any, customUrl?: string) {
+  const webhookUrl = customUrl || configuredWebhookUrl;
+
+  if (!webhookUrl) {
+    return { success: false, reason: 'No hay URL de Webhook de Google Sheets configurada.' };
+  }
+
+  try {
+    console.log('[Google Sheets Auto-Sync] Sincronizando registro con Google Sheets Webhook:', webhookUrl);
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(coachRecord),
+      redirect: 'follow',
+    });
+    const responseText = await response.text();
+    console.log('✅ [Google Sheets Webhook Sync Exitoso]:', responseText);
+    return { success: true, response: responseText, webhookUrl };
+  } catch (err: any) {
+    console.error('❌ [Google Sheets Webhook Sync Error]:', err?.message || err);
+    return { success: false, error: err?.message || 'Error de conexión con Google Sheets Webhook', webhookUrl };
+  }
+}
+
+// Get Webhook URL status
+app.get('/api/sheets/webhook-info', (_req, res) => {
+  return res.json({
+    success: true,
+    webhookUrl: configuredWebhookUrl,
+    totalRecords: syncedCoachesRecords.length,
+  });
+});
+
+// Update Webhook URL
+app.post('/api/sheets/webhook-info', (req, res) => {
+  const { webhookUrl } = req.body;
+  if (webhookUrl && typeof webhookUrl === 'string') {
+    configuredWebhookUrl = webhookUrl.trim();
+    console.log('✅ Google Sheets Webhook URL actualizada:', configuredWebhookUrl);
+  }
+  return res.json({
+    success: true,
+    webhookUrl: configuredWebhookUrl,
+    message: 'URL de Webhook de Google Sheets actualizada correctamente.',
+  });
+});
 
 // Get all auto-synced coach records
 app.get(['/api/sheets/records', '/api/sync-google-sheet', '/api/sheet-register'], (_req, res) => {
   return res.json({ success: true, totalRegistrados: syncedCoachesRecords.length, records: syncedCoachesRecords });
 });
 
-// Single Registration endpoint called when ANY coach completes registration modal
+// Single Registration endpoint called when ANY coach completes registration modal or activates subscription
 app.post(['/api/sync-google-sheet', '/api/sheet-register'], async (req, res) => {
   try {
     const record = req.body;
-    if (record && (record.email || record.nombreCompleto)) {
-      const existingIdx = syncedCoachesRecords.findIndex((r) => r.email === record.email);
+    if (record && (record.email || record.nombreCompleto || record.firstName)) {
+      const emailToMatch = (record.email || '').toLowerCase().trim();
+      const existingIdx = syncedCoachesRecords.findIndex((r) => r.email && r.email.toLowerCase().trim() === emailToMatch);
+
+      const fullRecord = {
+        id: record.id || `coach-${Date.now()}`,
+        nombreCompleto: record.nombreCompleto || `${record.firstName || ''} ${record.lastName || ''}`.trim() || 'Entrenador Registrado',
+        email: record.email || 'sin-email@coachmind.app',
+        telefono: record.telefono || record.phone || 'N/A',
+        pais: record.pais || record.country || 'España',
+        ciudad: record.ciudad || record.town || 'N/A',
+        club: record.club || 'Sin Club',
+        cargoRol: record.cargoRol || record.coachRole || 'Entrenador Principal',
+        titulacion: record.titulacion || record.coachLevel || 'Nivel 2',
+        generoEquipo: record.generoEquipo || record.teamGender || 'Masculino',
+        nivelEquipo: record.nivelEquipo || record.teamLevel || 'Autonómico',
+        categoriaEquipo: record.categoriaEquipo || record.teamCategory || 'Senior',
+        plan: record.plan || record.subscriptionPlan || 'Suscripción Oficial',
+        metodoPago: record.metodoPago || record.paymentMethod || 'Registro en Plataforma',
+        estado: record.estado || record.status || 'Suscripción Activa',
+        codigoActivacion: record.codigoActivacion || record.activationCode || 'N/A',
+        fechaRegistro: record.fechaRegistro || record.registeredAt || new Date().toLocaleDateString('es-ES'),
+      };
+
       if (existingIdx >= 0) {
-        syncedCoachesRecords[existingIdx] = { ...syncedCoachesRecords[existingIdx], ...record };
+        syncedCoachesRecords[existingIdx] = { ...syncedCoachesRecords[existingIdx], ...fullRecord };
       } else {
-        syncedCoachesRecords.unshift({
-          id: `coach-${Date.now()}`,
-          ...record,
-          fechaRegistro: record.fechaRegistro || new Date().toLocaleDateString('es-ES'),
-        });
+        syncedCoachesRecords.unshift(fullRecord);
       }
-      console.log('✅ Nuevo registro de entrenador guardado:', record.email || record.nombreCompleto);
+      console.log('✅ Nuevo registro/suscripción guardado en servidor:', fullRecord.email);
+
+      // Trigger Google Sheets Webhook automatically
+      const webhookRes = await triggerGoogleSheetsWebhook(fullRecord, record.webhookUrl);
+
+      return res.json({
+        success: true,
+        totalRegistrados: syncedCoachesRecords.length,
+        record: fullRecord,
+        webhookResult: webhookRes,
+        message: 'Entrenador registrado y sincronizado automáticamente en Google Sheets con éxito.',
+      });
     }
-    return res.json({
-      success: true,
-      totalRegistrados: syncedCoachesRecords.length,
-      records: syncedCoachesRecords,
-      message: 'Entrenador registrado con éxito.',
-    });
+
+    return res.status(400).json({ success: false, error: 'Datos de registro de entrenador incompletos.' });
   } catch (err: any) {
     console.error('Error al registrar entrenador:', err);
     return res.status(500).json({ success: false, error: err?.message || 'Error al guardar registro' });
@@ -1089,7 +1163,7 @@ app.get('/api/activation-codes/status', (_req, res) => {
 
 // Validate and consume single-use activation code
 app.post('/api/activation-codes/validate', (req, res) => {
-  const { code: rawCode } = req.body;
+  const { code: rawCode, userProfile, email } = req.body;
   const code = (rawCode || '').trim().toUpperCase().replace(/\s+/g, '');
 
   if (!code) {
@@ -1107,135 +1181,100 @@ app.post('/api/activation-codes/validate', (req, res) => {
   const currentMonthly = formatMonthlyCode(monthlyCodeIndex);
   const currentAnnual = formatAnnualCode(annualCodeIndex);
 
+  let planType: 'monthly' | 'annual' | null = null;
+  let creditsGranted = 500;
+
   // Check Monthly Code
   if (code === currentMonthly) {
     usedActivationCodes.add(code);
     monthlyCodeIndex++;
-    const nextCode = formatMonthlyCode(monthlyCodeIndex);
-    return res.json({
-      success: true,
-      message: `Código ${code} activado con éxito (Plan Mensual 5€). Próximo código único: ${nextCode}.`,
-      plan: 'monthly',
-      code,
-      nextExpectedCode: nextCode,
-      credits: 500,
-    });
-  }
-
-  // Check Annual Code
-  if (code === currentAnnual) {
+    planType = 'monthly';
+    creditsGranted = 500;
+  } else if (code === currentAnnual) {
+    // Check Annual Code
     usedActivationCodes.add(code);
     annualCodeIndex++;
-    const nextCode = formatAnnualCode(annualCodeIndex);
-    return res.json({
-      success: true,
-      message: `Código ${code} activado con éxito (Plan Anual 60€). Próximo código único: ${nextCode}.`,
-      plan: 'annual',
-      code,
-      nextExpectedCode: nextCode,
-      credits: 1000,
-    });
-  }
-
-  // Check pattern for monthly: BIZUMPROxx
-  if (code.startsWith('BIZUMPRO')) {
+    planType = 'annual';
+    creditsGranted = 1000;
+  } else if (code.startsWith('BIZUMPRO')) {
     const numPart = parseInt(code.replace('BIZUMPRO', ''), 10);
     if (!isNaN(numPart) && numPart >= 1 && numPart % 2 === 1) {
       const targetIdx = (numPart - 1) / 2;
       usedActivationCodes.add(code);
       monthlyCodeIndex = Math.max(monthlyCodeIndex, targetIdx + 1);
-      const nextCode = formatMonthlyCode(monthlyCodeIndex);
-      return res.json({
-        success: true,
-        message: `Código ${code} verificado. Plan Mensual 5€ activado. Próximo código activo: ${nextCode}.`,
-        plan: 'monthly',
-        code,
-        nextExpectedCode: nextCode,
-        credits: 500,
-      });
+      planType = 'monthly';
+      creditsGranted = 500;
     }
-  }
-
-  // Check pattern for annual: PRO2026xx
-  if (code.startsWith('PRO2026')) {
+  } else if (code.startsWith('PRO2026')) {
     const numPart = parseInt(code.replace('PRO2026', ''), 10);
     if (!isNaN(numPart) && numPart >= 1 && (numPart - 1) % 3 === 0) {
       const targetIdx = (numPart - 1) / 3;
       usedActivationCodes.add(code);
       annualCodeIndex = Math.max(annualCodeIndex, targetIdx + 1);
-      const nextCode = formatAnnualCode(annualCodeIndex);
-      return res.json({
-        success: true,
-        message: `Código ${code} verificado. Plan Anual 60€ activado. Próximo código activo: ${nextCode}.`,
-        plan: 'annual',
-        code,
-        nextExpectedCode: nextCode,
-        credits: 1000,
-      });
+      planType = 'annual';
+      creditsGranted = 1000;
     }
-  }
-
-  // General fallback codes
-  if (['BIZUMPRO', 'PRO2026', 'COACHMIND', 'VIPPRO', 'PRO5'].includes(code)) {
+  } else if (['BIZUMPRO', 'PRO2026', 'COACHMIND', 'VIPPRO', 'PRO5'].includes(code)) {
     const isAnnual = code.includes('2026') || code.includes('VIP');
     usedActivationCodes.add(code);
-    return res.json({
-      success: true,
-      message: `Código especial ${code} activado.`,
-      plan: isAnnual ? 'annual' : 'monthly',
-      code,
-      credits: isAnnual ? 1000 : 500,
+    planType = isAnnual ? 'annual' : 'monthly';
+    creditsGranted = isAnnual ? 1000 : 500;
+  }
+
+  if (!planType) {
+    return res.status(400).json({
+      success: false,
+      message: `Código no válido. Código activo de 1 solo uso para Plan Mensual (5€): "${currentMonthly}", Plan Anual (60€): "${currentAnnual}".`,
     });
   }
 
-  return res.status(400).json({
-    success: false,
-    message: `Código no válido. Código activo de 1 solo uso para Plan Mensual (5€): "${currentMonthly}", Plan Anual (60€): "${currentAnnual}".`,
+  const nextMonthlyCode = formatMonthlyCode(monthlyCodeIndex);
+  const nextAnnualCode = formatAnnualCode(annualCodeIndex);
+  const nextExpectedCode = planType === 'annual' ? nextAnnualCode : nextMonthlyCode;
+
+  // Auto-sync activated coach subscription to Google Sheets
+  const userEmail = email || userProfile?.email;
+  if (userEmail) {
+    const subRecord = {
+      id: `coach-sub-${Date.now()}`,
+      nombreCompleto: userProfile?.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : 'Entrenador Suscrito',
+      email: userEmail,
+      telefono: userProfile?.phone || 'N/A',
+      pais: userProfile?.country || 'España',
+      ciudad: userProfile?.town || 'N/A',
+      club: userProfile?.club || 'Sin Club',
+      cargoRol: userProfile?.coachRole || 'Entrenador Principal',
+      titulacion: userProfile?.coachLevel || 'Nivel 2',
+      generoEquipo: userProfile?.teamGender || 'Masculino',
+      nivelEquipo: userProfile?.teamLevel || 'Autonómico',
+      categoriaEquipo: userProfile?.teamCategory || 'Senior',
+      plan: planType === 'annual' ? 'Plan Anual (60€/año)' : 'Plan Mensual (5€/mes)',
+      metodoPago: `Código de Activación (${code})`,
+      estado: 'Suscripción Activa (Pro)',
+      codigoActivacion: code,
+      fechaRegistro: new Date().toLocaleDateString('es-ES'),
+    };
+
+    const existingIdx = syncedCoachesRecords.findIndex((r) => r.email && r.email.toLowerCase().trim() === userEmail.toLowerCase().trim());
+    if (existingIdx >= 0) {
+      syncedCoachesRecords[existingIdx] = { ...syncedCoachesRecords[existingIdx], ...subRecord };
+    } else {
+      syncedCoachesRecords.unshift(subRecord);
+    }
+
+    triggerGoogleSheetsWebhook(subRecord).catch((err) => {
+      console.error('Error triggering webhook from activation code:', err);
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: `Código ${code} activado con éxito (${planType === 'annual' ? 'Plan Anual 60€' : 'Plan Mensual 5€'}). Próximo código único: ${nextExpectedCode}.`,
+    plan: planType,
+    code,
+    nextExpectedCode,
+    credits: creditsGranted,
   });
-});
-
-// Automatic background endpoint for new coach registrations (Subscribed or Free Trial)
-app.post('/api/sync-google-sheet', async (req, res) => {
-  try {
-    const coachData = req.body;
-    console.log('[Google Sheets Auto-Sync] Nuevo registro de entrenador recibido:', coachData?.email || 'Desconocido');
-
-    if (coachData && coachData.email) {
-      // Remove previous entries with same email if present, then add updated record
-      const existingIdx = syncedCoachesRecords.findIndex(r => r.email === coachData.email);
-      if (existingIdx >= 0) {
-        syncedCoachesRecords[existingIdx] = coachData;
-      } else {
-        syncedCoachesRecords.unshift(coachData);
-      }
-    }
-
-    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbyNhR0oVidSEd8llHmebFMBq7DNC2MqUWZWoDPz17mrHgJ_KZJ8PkRYkh5yRsWr-MQi/exec';
-
-    if (webhookUrl) {
-      try {
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(coachData),
-          redirect: 'follow',
-        });
-        const responseText = await response.text();
-        console.log('[Google Sheets Webhook OK]:', responseText);
-      } catch (webhookErr) {
-        console.error('[Google Sheets Webhook Error]:', webhookErr);
-      }
-    }
-
-    res.json({
-      success: true,
-      message: 'Entrenador sincronizado automáticamente en tu hoja de cálculo de Google Sheets.',
-      type: coachData.estado || 'Registro recibido',
-    });
-  } catch (err: any) {
-    console.error('Error auto syncing to Google Sheets:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
 // Serve frontend assets or integrate Vite middleware

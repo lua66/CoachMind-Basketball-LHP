@@ -26,7 +26,6 @@ export interface CoachRecord {
 
 // Sample initial database of coaches for demonstration and syncing
 export const initialCoachesDatabase: CoachRecord[] = [
-  // Entrenadores Suscritos (De Pago)
   {
     id: 'coach-001',
     firstName: 'Carlos',
@@ -37,11 +36,11 @@ export const initialCoachesDatabase: CoachRecord[] = [
     teamLevel: 'Autonómico',
     teamCategory: 'Cadete (Sub-16)',
     isSubscribed: true,
-    subscriptionPlan: 'Anual (119,99€/año)',
-    paymentMethod: 'Tarjeta (•••• 4242)',
-    creditsRemaining: 3500,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2026-01-15',
-    status: 'Activa (Pro)',
+    status: 'Licencia Activa',
   },
   {
     id: 'coach-002',
@@ -53,11 +52,11 @@ export const initialCoachesDatabase: CoachRecord[] = [
     teamLevel: 'Regional',
     teamCategory: 'Infantil (Sub-14)',
     isSubscribed: true,
-    subscriptionPlan: 'Mensual (14,99€/mes)',
-    paymentMethod: 'PayPal',
-    creditsRemaining: 210,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2026-02-01',
-    status: 'Activa (Pro)',
+    status: 'Licencia Activa',
   },
   {
     id: 'coach-003',
@@ -69,13 +68,12 @@ export const initialCoachesDatabase: CoachRecord[] = [
     teamLevel: 'Nacional',
     teamCategory: 'Junior (Sub-18)',
     isSubscribed: true,
-    subscriptionPlan: 'Anual (119,99€/año)',
-    paymentMethod: 'Tarjeta (•••• 8812)',
-    creditsRemaining: 3200,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2025-11-20',
-    status: 'Activa (Pro)',
+    status: 'Licencia Activa',
   },
-  // Entrenadores No Suscritos (Prueba Gratuita / Invitados)
   {
     id: 'coach-004',
     firstName: 'David',
@@ -85,12 +83,12 @@ export const initialCoachesDatabase: CoachRecord[] = [
     club: 'CD Basket San Agustín',
     teamLevel: 'Escolar / Iniciación',
     teamCategory: 'Alevín (Sub-12)',
-    isSubscribed: false,
-    subscriptionPlan: 'Ninguno (Invitado)',
-    paymentMethod: '-',
-    creditsRemaining: 0,
+    isSubscribed: true,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2026-03-02',
-    status: 'Prueba Gratuita (Límite 1 acción/sem)',
+    status: 'Licencia Activa',
   },
   {
     id: 'coach-005',
@@ -101,12 +99,12 @@ export const initialCoachesDatabase: CoachRecord[] = [
     club: 'Colegio Maristas Basket',
     teamLevel: 'Liga Local',
     teamCategory: 'Benjamín (Sub-10)',
-    isSubscribed: false,
-    subscriptionPlan: 'Ninguno (Invitado)',
-    paymentMethod: '-',
-    creditsRemaining: 0,
+    isSubscribed: true,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2026-03-05',
-    status: 'Prueba Gratuita (Límite 1 acción/sem)',
+    status: 'Licencia Activa',
   },
   {
     id: 'coach-006',
@@ -117,12 +115,12 @@ export const initialCoachesDatabase: CoachRecord[] = [
     club: 'Real Canoe NC',
     teamLevel: 'Autonómico',
     teamCategory: 'Senior',
-    isSubscribed: false,
-    subscriptionPlan: 'Ninguno (Invitado)',
-    paymentMethod: '-',
-    creditsRemaining: 0,
+    isSubscribed: true,
+    subscriptionPlan: 'Licencia Gratuita Libre (Acceso Total)',
+    paymentMethod: 'Registro Web Oficial',
+    creditsRemaining: 99999,
     registeredAt: '2026-03-08',
-    status: 'Prueba Gratuita (Límite 1 acción/sem)',
+    status: 'Licencia Activa',
   },
 ];
 
@@ -133,8 +131,14 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [serverRecords, setServerRecords] = useState<any[]>([]);
+  
+  // Webhook state
+  const [webhookUrlInput, setWebhookUrlInput] = useState('');
+  const [isSavingWebhook, setIsSavingWebhook] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookStatusMsg, setWebhookStatusMsg] = useState<string | null>(null);
 
-  // Fetch server records on mount
+  // Fetch server records and Webhook info on mount
   React.useEffect(() => {
     fetch('/api/sheets/records')
       .then((res) => res.json())
@@ -144,7 +148,90 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
         }
       })
       .catch((err) => console.warn('Could not fetch server sheet records:', err));
+
+    fetch('/api/sheets/webhook-info')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.webhookUrl) {
+          setWebhookUrlInput(data.webhookUrl);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveWebhook = async () => {
+    if (!webhookUrlInput.trim()) return;
+    setIsSavingWebhook(true);
+    setWebhookStatusMsg(null);
+
+    try {
+      const res = await fetch('/api/sheets/webhook-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl: webhookUrlInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWebhookStatusMsg('✅ URL de Webhook guardada correctamente.');
+      } else {
+        setWebhookStatusMsg('⚠️ Error al guardar URL de Webhook.');
+      }
+    } catch (err: any) {
+      setWebhookStatusMsg('⚠️ Error de red al guardar Webhook.');
+    } finally {
+      setIsSavingWebhook(false);
+    }
+  };
+
+  const handleTestWebhookSend = async () => {
+    setIsTestingWebhook(true);
+    setWebhookStatusMsg(null);
+
+    const sampleTestRecord = {
+      nombreCompleto: userProfile?.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : 'Entrenador de Prueba',
+      email: userProfile?.email || 'prueba.entrenador@coachmind.app',
+      telefono: userProfile?.phone || '+34 600 000 000',
+      pais: userProfile?.country || 'España',
+      ciudad: userProfile?.town || 'Madrid',
+      club: userProfile?.club || 'Club de Prueba',
+      cargoRol: userProfile?.coachRole || 'Entrenador Principal',
+      titulacion: userProfile?.coachLevel || 'Nivel 2',
+      generoEquipo: userProfile?.teamGender || 'Masculino',
+      nivelEquipo: userProfile?.teamLevel || 'Autonómico',
+      categoriaEquipo: userProfile?.teamCategory || 'Senior',
+      plan: 'Licencia Gratuita Libre (Acceso Total)',
+      metodoPago: 'Registro Web Directo',
+      estado: 'Licencia Gratuita Registrada',
+      codigoActivacion: 'N/A',
+      fechaRegistro: new Date().toLocaleDateString('es-ES'),
+      webhookUrl: webhookUrlInput.trim() || undefined,
+    };
+
+    try {
+      const res = await fetch('/api/sync-google-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleTestRecord),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setWebhookStatusMsg('✅ Registro de prueba enviado y sincronizado con éxito en tu Google Sheet.');
+        // Refresh server records
+        const recordsRes = await fetch('/api/sheets/records');
+        const recordsData = await recordsRes.json();
+        if (recordsData.success && Array.isArray(recordsData.records)) {
+          setServerRecords(recordsData.records);
+        }
+      } else {
+        setWebhookStatusMsg(`⚠️ Error en sincronización: ${data.error || 'Respuesta no válida'}`);
+      }
+    } catch (err: any) {
+      setWebhookStatusMsg(`⚠️ Error al enviar prueba: ${err.message}`);
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
 
   // Filter base list
   const subscribedList: CoachRecord[] = [...initialCoachesDatabase.filter((c) => c.isSubscribed)];
@@ -335,7 +422,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
               </span>
             </div>
             <h3 className="text-lg font-extrabold text-white tracking-tight">
-              Sincronización de Entrenadores (Suscritos vs No Suscritos)
+              Sincronización de Entrenadores Registrados
             </h3>
           </div>
         </div>
@@ -369,6 +456,61 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
         </div>
       </div>
 
+      {/* Instant Webhook Auto-Sync Configuration & Direct Testing */}
+      <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Sincronización Automática en Tiempo Real (Google Apps Script / Webhook)
+            </h4>
+          </div>
+          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            Suscripciones Auto-Enviadas
+          </span>
+        </div>
+
+        <p className="text-[11px] text-slate-300 leading-relaxed">
+          Cada vez que un entrenador se registra o activa una suscripción, sus datos se envían automáticamente a tu Webhook de Google Sheets en tiempo real.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+          <div className="relative flex-1 w-full">
+            <input
+              type="text"
+              value={webhookUrlInput}
+              onChange={(e) => setWebhookUrlInput(e.target.value)}
+              placeholder="https://script.google.com/macros/s/.../exec"
+              className="w-full pl-3 pr-24 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={handleSaveWebhook}
+              disabled={isSavingWebhook}
+              className="absolute right-1 top-1 bottom-1 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSavingWebhook ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleTestWebhookSend}
+            disabled={isTestingWebhook}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isTestingWebhook ? 'animate-spin' : ''}`} />
+            <span>{isTestingWebhook ? 'Enviando Prueba...' : 'Probar Envío a Google Sheets'}</span>
+          </button>
+        </div>
+
+        {webhookStatusMsg && (
+          <div className="p-2.5 rounded-lg bg-slate-950 border border-emerald-500/30 text-xs text-emerald-200 font-medium animate-fadeIn">
+            {webhookStatusMsg}
+          </div>
+        )}
+      </div>
+
       {/* Database Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Subscribed Coaches Block */}
@@ -376,14 +518,14 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-emerald-400" />
-              Entrenadores Suscritos (De Pago)
+              Entrenadores Registrados (Acceso Total)
             </span>
             <span className="px-2 py-0.5 text-xs font-black rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {subscribedList.length} Registrados
+              {subscribedList.length + nonSubscribedList.length} Registrados
             </span>
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            Entrenadores con suscripción mensual (14,99€) o anual (119,99€) activa, créditos de IA ilimitados y ficha oficial.
+            Entrenadores oficiales registrados con licencia gratuita libre, acceso completo a herramientas de IA, diseño de entrenamientos y pizarra.
           </p>
           <div className="pt-2 flex items-center justify-between border-t border-slate-800 text-[11px]">
             <span className="text-slate-400">Exportar grupo:</span>
@@ -398,29 +540,29 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
           </div>
         </div>
 
-        {/* Non-Subscribed Coaches Block */}
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-amber-500/30 space-y-2">
+        {/* Database Info Block */}
+        <div className="p-4 rounded-xl bg-slate-900/80 border border-teal-500/30 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-              <UserX className="w-4 h-4 text-amber-400" />
-              Entrenadores No Suscritos (Gratuitos)
+            <span className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-teal-400" />
+              Sincronización Continua Google
             </span>
-            <span className="px-2 py-0.5 text-xs font-black rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              {nonSubscribedList.length} Invitados
+            <span className="px-2 py-0.5 text-xs font-black rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+              Auto-Sync
             </span>
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            Entrenadores en modo prueba con acceso limitado (1 acción/semana). Ideal para seguimiento comercial y conversión a Pro.
+            Cada registro enviado desde el formulario de la app se guarda automáticamente en el servidor y se transmite directamente a tu Google Sheet.
           </p>
           <div className="pt-2 flex items-center justify-between border-t border-slate-800 text-[11px]">
-            <span className="text-slate-400">Exportar grupo:</span>
+            <span className="text-slate-400">Exportar registros:</span>
             <button
               type="button"
-              onClick={() => handleDownloadCSV('nonsubscribed')}
-              className="text-amber-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+              onClick={() => handleDownloadCSV('subscribed')}
+              className="text-teal-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
             >
               <Download className="w-3 h-3" />
-              <span>Descargar CSV</span>
+              <span>Descargar CSV Completo</span>
             </button>
           </div>
         </div>

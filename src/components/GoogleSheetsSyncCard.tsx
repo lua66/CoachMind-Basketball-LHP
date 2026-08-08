@@ -133,7 +133,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
   const [serverRecords, setServerRecords] = useState<any[]>([]);
   
   // Webhook state
-  const [webhookUrlInput, setWebhookUrlInput] = useState('');
+  const [webhookUrlInput, setWebhookUrlInput] = useState('https://script.google.com/macros/s/AKfycbxViXxELdCzL_aH1Nn2OIODG60Xc-gp9u9qmepH7klAt9YslYezOCA5ShNJxaLhxN_lgw/exec');
   const [isSavingWebhook, setIsSavingWebhook] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [webhookStatusMsg, setWebhookStatusMsg] = useState<string | null>(null);
@@ -550,6 +550,56 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
             {webhookStatusMsg}
           </div>
         )}
+
+        {/* Apps Script Guide & Copyable Code for CoachMind Basketball */}
+        <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-teal-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+              Código Google Apps Script para "CoachMind Basketball"
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const code = `function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Fecha", "Nombre", "Email", "Teléfono", "País", "Ciudad", "Club", "Cargo", "Titulación", "Categoría", "Nivel", "Plan", "Método Pago"]);
+    }
+    var data = JSON.parse(e.postData.contents);
+    sheet.appendRow([
+      data.fechaRegistro || new Date().toLocaleDateString('es-ES'),
+      data.nombreCompleto || data.firstName + ' ' + data.lastName || 'Entrenador',
+      data.email || '',
+      data.telefono || '',
+      data.pais || '',
+      data.ciudad || '',
+      data.club || '',
+      data.cargoRol || '',
+      data.titulacion || '',
+      data.categoriaEquipo || '',
+      data.nivelEquipo || '',
+      data.plan || 'Licencia Gratuita Libre',
+      data.metodoPago || 'Registro Web'
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({result: "error", error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+                navigator.clipboard.writeText(code);
+                setWebhookStatusMsg('📋 Código de Google Apps Script copiado al portapapeles.');
+              }}
+              className="px-2.5 py-1 rounded bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/40 text-teal-300 font-bold text-[11px] transition-all cursor-pointer"
+            >
+              Copiar Código Script
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            En tu Google Sheet llamado <strong>CoachMind Basketball</strong>, ve a <strong>Extensiones &gt; Apps Script</strong>, pega este código, guarda e implementa como <strong>Aplicación web</strong> (Acceso: <em>Cualquier persona</em>). Pega la URL resultante arriba.
+          </p>
+        </div>
       </div>
 
       {/* Database Statistics Cards */}

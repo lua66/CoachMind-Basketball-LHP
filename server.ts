@@ -910,13 +910,14 @@ app.post('/api/paypal/capture-order', async (req, res) => {
 
 // In-memory & Persistent store for automatic coach registrations/subscriptions synced to Google Sheets
 const syncedCoachesRecords: any[] = [];
-let configuredWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxdfsiFGL3LI7f87XeGTvyqxWCeQiiov2WmZ2RC1XORIRjJ0CwaNd5VOqBMT8Ue_TXr/exec';
+let configuredWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || '';
 
 // Helper function to send records directly to Google Sheets Webhook Script
 async function triggerGoogleSheetsWebhook(coachRecord: any, customUrl?: string) {
   const webhookUrl = customUrl || configuredWebhookUrl;
 
-  if (!webhookUrl) {
+  if (!webhookUrl || !webhookUrl.trim()) {
+    console.log('[Google Sheets Auto-Sync] Desconectado: No hay URL de Webhook configurada.');
     return { success: false, reason: 'No hay URL de Webhook de Google Sheets configurada.' };
   }
 
@@ -946,17 +947,17 @@ app.get('/api/sheets/webhook-info', (_req, res) => {
   });
 });
 
-// Update Webhook URL
+// Update or clear Webhook URL
 app.post('/api/sheets/webhook-info', (req, res) => {
   const { webhookUrl } = req.body;
-  if (webhookUrl && typeof webhookUrl === 'string') {
+  if (typeof webhookUrl === 'string') {
     configuredWebhookUrl = webhookUrl.trim();
-    console.log('✅ Google Sheets Webhook URL actualizada:', configuredWebhookUrl);
+    console.log('✅ Google Sheets Webhook URL actualizada/desconectada:', configuredWebhookUrl || 'Desconectado (vacío)');
   }
   return res.json({
     success: true,
     webhookUrl: configuredWebhookUrl,
-    message: 'URL de Webhook de Google Sheets actualizada correctamente.',
+    message: configuredWebhookUrl ? 'URL de Webhook actualizada correctamente.' : 'Todas las conexiones y URLs de Google Sheets han sido desconectadas.',
   });
 });
 
@@ -1113,9 +1114,9 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
       }
     }
 
-    // Default response with working Google Sheet template preview URL if OAuth token is not passed in header
-    const mockSpreadsheetId = '1CoachMind_Base_Datos_Entrenadores_Suscritos_vs_NoSuscritos';
-    const mockSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=0';
+    // Response when OAuth token is not passed in header
+    const mockSpreadsheetId = '';
+    const mockSpreadsheetUrl = '';
 
     return res.json({
       success: true,
@@ -1123,7 +1124,7 @@ app.post('/api/sheets/sync-coaches', async (req, res) => {
       spreadsheetUrl: mockSpreadsheetUrl,
       subscribedCount: subscribedCoaches.length,
       nonSubscribedCount: nonSubscribedCoaches.length,
-      message: 'Sincronización de base de datos de Entrenadores (Suscritos vs No Suscritos) lista.',
+      message: 'Base de datos lista en el servidor.',
     });
   } catch (error: any) {
     console.error('Error in /api/sheets/sync-coaches:', error);

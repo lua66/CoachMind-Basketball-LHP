@@ -160,7 +160,6 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
   }, []);
 
   const handleSaveWebhook = async () => {
-    if (!webhookUrlInput.trim()) return;
     setIsSavingWebhook(true);
     setWebhookStatusMsg(null);
 
@@ -172,12 +171,40 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
       });
       const data = await res.json();
       if (data.success) {
-        setWebhookStatusMsg('✅ URL de Webhook guardada correctamente.');
+        if (!webhookUrlInput.trim()) {
+          setWebhookStatusMsg('✅ Se han eliminado y desconectado todas las URLs de Google Sheets.');
+        } else {
+          setWebhookStatusMsg('✅ URL de Webhook guardada correctamente.');
+        }
       } else {
-        setWebhookStatusMsg('⚠️ Error al guardar URL de Webhook.');
+        setWebhookStatusMsg('⚠️ Error al actualizar URL de Webhook.');
       }
     } catch (err: any) {
-      setWebhookStatusMsg('⚠️ Error de red al guardar Webhook.');
+      setWebhookStatusMsg('⚠️ Error de red al actualizar Webhook.');
+    } finally {
+      setIsSavingWebhook(false);
+    }
+  };
+
+  const handleDisconnectWebhook = async () => {
+    setIsSavingWebhook(true);
+    setWebhookStatusMsg(null);
+    setWebhookUrlInput('');
+
+    try {
+      const res = await fetch('/api/sheets/webhook-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl: '' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWebhookStatusMsg('✅ Desconectado: Se han eliminado todas las URLs y conexiones externas con Google Sheets.');
+      } else {
+        setWebhookStatusMsg('⚠️ No se pudo completar la desconexión.');
+      }
+    } catch (err: any) {
+      setWebhookStatusMsg('⚠️ Error al solicitar la desconexión.');
     } finally {
       setIsSavingWebhook(false);
     }
@@ -482,7 +509,7 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
               type="text"
               value={webhookUrlInput}
               onChange={(e) => setWebhookUrlInput(e.target.value)}
-              placeholder="https://script.google.com/macros/s/.../exec"
+              placeholder="Pega aquí tu URL de Google Apps Script o déjala vacía..."
               className="w-full pl-3 pr-24 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
             <button
@@ -495,15 +522,27 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleTestWebhookSend}
-            disabled={isTestingWebhook}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isTestingWebhook ? 'animate-spin' : ''}`} />
-            <span>{isTestingWebhook ? 'Enviando Prueba...' : 'Probar Envío a Google Sheets'}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleTestWebhookSend}
+              disabled={isTestingWebhook || !webhookUrlInput.trim()}
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isTestingWebhook ? 'animate-spin' : ''}`} />
+              <span>{isTestingWebhook ? 'Enviando...' : 'Probar Envío'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDisconnectWebhook}
+              disabled={isSavingWebhook}
+              className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-extrabold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-40 shrink-0"
+              title="Borrar todas las URLs y desconectar Google Sheets"
+            >
+              <span>Desconectar / Borrar URL</span>
+            </button>
+          </div>
         </div>
 
         {webhookStatusMsg && (

@@ -910,7 +910,7 @@ app.post('/api/paypal/capture-order', async (req, res) => {
 
 // In-memory & Persistent store for automatic coach registrations/subscriptions synced to Google Sheets
 const syncedCoachesRecords: any[] = [];
-let configuredWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbyNhR0oVidSEd8llHmebFMBq7DNC2MqUWZWoDPz17mrHgJ_KZJ8PkRYkh5yRsWr-MQi/exec';
+let configuredWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || 'https://script.google.com/macros/s/AKfycbxdfsiFGL3LI7f87XeGTvyqxWCeQiiov2WmZ2RC1XORIRjJ0CwaNd5VOqBMT8Ue_TXr/exec';
 
 // Helper function to send records directly to Google Sheets Webhook Script
 async function triggerGoogleSheetsWebhook(coachRecord: any, customUrl?: string) {

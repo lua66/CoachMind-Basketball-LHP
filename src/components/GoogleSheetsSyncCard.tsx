@@ -439,19 +439,21 @@ export const GoogleSheetsSyncCard: React.FC<GoogleSheetsSyncCardProps> = ({ user
       </div>
 
       {/* Privacy Guarantee & Administrator Access Badge */}
-      <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-200 text-xs space-y-1.5 flex items-start gap-3">
-        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+      <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-200 text-xs space-y-2 flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
           <ShieldCheck className="w-5 h-5 text-emerald-400" />
         </div>
-        <div className="space-y-0.5">
-          <h4 className="font-extrabold text-white text-xs flex items-center gap-1.5">
-            <span>Privacidad & Acceso Exclusivo de Administrador</span>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-extrabold text-white text-xs">
+              Sincronización 100% Gratuita y Automática en Español
+            </h4>
             <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              Solo Tú
+              Sin Pagos
             </span>
-          </h4>
+          </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            Esta hoja de cálculo de Google Sheets se crea de forma privada directamente dentro de tu cuenta personal de Google Drive. <strong>Ningún otro usuario ni entrenador registrado en la plataforma tiene acceso a este documento ni a la base de datos</strong>.
+            <strong>No requiere pagar nada ni configurar cuentas complejas.</strong> Google Sheets y Google Apps Script son herramientas completamente gratuitas de Google. Cada vez que un nuevo entrenador se registra en tu app, sus datos se envían solos a tu hoja de cálculo sin que tengas que hacer nada.
           </p>
         </div>
       </div>

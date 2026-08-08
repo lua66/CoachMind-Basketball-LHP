@@ -346,7 +346,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
         {/* LOGIN FORM */}
         {!registerSuccess && authMode === 'login' && (
-          <form onSubmit={handleLoginSubmit} className="p-5 sm:p-6 space-y-4">
+          <form onSubmit={handleLoginSubmit} autoComplete="off" className="p-5 sm:p-6 space-y-4">
             {errorMsg && (
               <div className="p-3.5 rounded-xl bg-red-950/80 border border-red-800/80 text-red-200 text-xs font-medium flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
@@ -363,6 +363,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <input
                   type="email"
                   required
+                  autoComplete="off"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="entrenador@miclub.com"
@@ -378,6 +379,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <input
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••"
@@ -417,7 +419,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
         {/* FREE REGISTRATION FORM */}
         {!registerSuccess && authMode === 'register' && (
-          <form onSubmit={handleFreeRegistrationSubmit} className="p-5 sm:p-6 space-y-4">
+          <form onSubmit={handleFreeRegistrationSubmit} autoComplete="off" className="p-5 sm:p-6 space-y-4">
             {errorMsg && (
               <div className="p-3.5 rounded-xl bg-red-950/80 border border-red-800/80 text-red-200 text-xs font-medium flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
@@ -435,6 +437,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Ej. Carlos"
@@ -451,6 +454,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <input
                   type="text"
                   required
+                  autoComplete="off"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ej. García Martínez"
@@ -467,6 +471,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <input
                   type="email"
                   required
+                  autoComplete="off"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="entrenador@miclub.com"

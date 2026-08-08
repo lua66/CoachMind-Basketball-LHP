@@ -18,6 +18,16 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
+// Helper function for API timeouts
+function withTimeout<T>(promise: Promise<T>, ms: number = 7500): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Gemini request timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 // Lazy initializer for Gemini client to safely handle missing keys at startup
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -210,70 +220,73 @@ Diseña una sesión completa de entrenamiento altamente estructurada adaptada a 
 IMPORTANTE: Los ejercicios deben estar directamente enfocados en el OBJETIVO PRINCIPAL indicado arriba ("${objective}"). No generes ejercicios genéricos. Cada título, descripción y consejo debe referirse explícitamente a este objetivo.`;
 
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-            systemInstruction,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                warmup: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      durationMinutes: { type: Type.INTEGER },
-                      playersCount: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+              systemInstruction,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  warmup: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        id: { type: Type.STRING },
+                        title: { type: Type.STRING },
+                        durationMinutes: { type: Type.INTEGER },
+                        playersCount: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      },
+                      required: ['id', 'title', 'durationMinutes', 'description'],
                     },
-                    required: ['id', 'title', 'durationMinutes', 'description'],
                   },
-                },
-                mainDrills: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      durationMinutes: { type: Type.INTEGER },
-                      playersCount: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  mainDrills: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        id: { type: Type.STRING },
+                        title: { type: Type.STRING },
+                        durationMinutes: { type: Type.INTEGER },
+                        playersCount: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      },
+                      required: ['id', 'title', 'durationMinutes', 'description'],
                     },
-                    required: ['id', 'title', 'durationMinutes', 'description'],
                   },
-                },
-                cooldown: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      durationMinutes: { type: Type.INTEGER },
-                      playersCount: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  cooldown: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        id: { type: Type.STRING },
+                        title: { type: Type.STRING },
+                        durationMinutes: { type: Type.INTEGER },
+                        playersCount: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        coachingTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      },
+                      required: ['id', 'title', 'durationMinutes', 'description'],
                     },
-                    required: ['id', 'title', 'durationMinutes', 'description'],
                   },
+                  coachNotes: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  totalDuration: { type: Type.INTEGER },
                 },
-                coachNotes: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                },
-                totalDuration: { type: Type.INTEGER },
+                required: ['warmup', 'mainDrills', 'cooldown', 'coachNotes', 'totalDuration'],
               },
-              required: ['warmup', 'mainDrills', 'cooldown', 'coachNotes', 'totalDuration'],
             },
-          },
-        });
+          }),
+          7500
+        );
 
         let jsonText = (response.text || '').trim();
         if (jsonText.startsWith('```')) {

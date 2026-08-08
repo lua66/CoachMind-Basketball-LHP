@@ -132,8 +132,15 @@ export const PhilosophyView: React.FC<PhilosophyViewProps> = ({
         }),
       });
 
-      const data = await response.json();
-      if (data.success) {
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.warn('Response was not JSON:', text);
+      }
+      if (data && data.success) {
         setTestReply(data.reply || data.text);
       } else {
         setTestReply('Error al consultar la IA. Asegúrate de tener configurada la clave en ajustes.');

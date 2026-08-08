@@ -342,8 +342,15 @@ export const MatchAnalysisView: React.FC<MatchAnalysisViewProps> = ({
           fileContent: fileContentText,
         }),
       });
-      const data = await response.json();
-      if (data.success) {
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.warn('Response was not JSON:', text);
+      }
+      if (data && data.success) {
         aiAnalysis = data.analysis;
       }
     } catch (err) {

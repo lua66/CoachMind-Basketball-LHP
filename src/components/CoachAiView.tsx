@@ -182,10 +182,18 @@ export const CoachAiView: React.FC<CoachAiViewProps> = ({
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.warn('Response was not JSON:', text);
+        throw new Error('El servidor devolvió un error inesperado al procesar la solicitud.');
+      }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Error en el servidor de IA');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Error en el servidor de IA');
       }
 
       const aiMsg: ChatMessage = {

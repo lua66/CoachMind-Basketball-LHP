@@ -231,11 +231,24 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         existingSheets.push(sheetRecord);
         localStorage.setItem('coachmind_google_sheet_records', JSON.stringify(existingSheets));
 
-        await fetch('/api/sync-google-sheet', {
+        const GOOGLE_SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxViXxELdCzL_aH1Nn2OIODG60Xc-gp9u9qmepH7klAt9YslYezOCA5ShNJxaLhxN_lgw/exec';
+
+        // 1. Try backend Express API sync
+        fetch('/api/sync-google-sheet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sheetRecord),
         }).catch(() => {});
+
+        // 2. Direct client-side dispatch to Google Sheets Webhook (Essential for Vercel static deployments & guest mode)
+        fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sheetRecord),
+        }).catch((err) => {
+          console.warn('Direct Google Sheets Webhook sync warning:', err);
+        });
       } catch (err) {
         console.error('Sheet sync error:', err);
       }
